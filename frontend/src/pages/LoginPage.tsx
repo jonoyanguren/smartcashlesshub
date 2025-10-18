@@ -9,20 +9,12 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { t } = useTranslation(['auth', 'common']);
-  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Login form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  // Register form state
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [registerEmail, setRegisterEmail] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -65,62 +57,6 @@ const LoginPage = () => {
     }
   };
 
-  const handleRegister = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    // Validation
-    if (registerPassword !== confirmPassword) {
-      setError(t('auth:passwords_dont_match'));
-      setLoading(false);
-      return;
-    }
-
-    if (registerPassword.length < 8) {
-      setError(t('auth:password_min_length'));
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch('http://localhost:3001/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: registerEmail,
-          password: registerPassword,
-          firstName,
-          lastName,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.errorCode || 'Registration failed');
-      }
-
-      // Update auth context
-      login(
-        data.data.accessToken,
-        data.data.refreshToken,
-        data.data.user,
-        data.data.tenant
-      );
-
-      // Redirect to dashboard
-      navigate('/dashboard');
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 flex items-center justify-center p-4">
       {/* Background decoration */}
@@ -141,42 +77,12 @@ const LoginPage = () => {
             {t('common:app_name')}
           </h1>
           <p className="text-gray-600">
-            {isLogin ? t('auth:welcome_back') : t('auth:create_your_account')}
+            {t('auth:welcome_back')}
           </p>
         </div>
 
         {/* Auth Card */}
         <Card className="backdrop-blur-sm bg-white/90">
-          {/* Toggle between Login/Register */}
-          <div className="flex gap-2 mb-6 p-1 bg-gray-100 rounded-lg">
-            <button
-              onClick={() => {
-                setIsLogin(true);
-                setError('');
-              }}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                isLogin
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {t('auth:sign_in')}
-            </button>
-            <button
-              onClick={() => {
-                setIsLogin(false);
-                setError('');
-              }}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                !isLogin
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {t('auth:sign_up')}
-            </button>
-          </div>
-
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -185,133 +91,50 @@ const LoginPage = () => {
           )}
 
           {/* Login Form */}
-          {isLogin ? (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <Input
-                label={t('auth:email')}
-                type="email"
-                placeholder={t('auth:email_placeholder')}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                fullWidth
-                leftIcon={
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                  </svg>
-                }
-              />
-              <Input
-                label={t('auth:password')}
-                type="password"
-                placeholder={t('auth:password_placeholder')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                fullWidth
-                leftIcon={
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                }
-              />
+          <form onSubmit={handleLogin} className="space-y-4">
+            <Input
+              label={t('auth:email')}
+              type="email"
+              placeholder={t('auth:email_placeholder')}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              fullWidth
+              leftIcon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                </svg>
+              }
+            />
+            <Input
+              label={t('auth:password')}
+              type="password"
+              placeholder={t('auth:password_placeholder')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              fullWidth
+              leftIcon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              }
+            />
 
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="rounded border-gray-300 text-accent-600 focus:ring-accent-500" />
-                  <span className="text-gray-600">{t('auth:remember_me')}</span>
-                </label>
-                <a href="#" className="text-accent-600 hover:text-accent-700 font-medium">
-                  {t('auth:forgot_password')}
-                </a>
-              </div>
+            <div className="flex items-center justify-between text-sm">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="rounded border-gray-300 text-accent-600 focus:ring-accent-500" />
+                <span className="text-gray-600">{t('auth:remember_me')}</span>
+              </label>
+              <a href="#" className="text-accent-600 hover:text-accent-700 font-medium">
+                {t('auth:forgot_password')}
+              </a>
+            </div>
 
-              <Button type="submit" variant="primary" fullWidth size="lg" loading={loading}>
-                {t('auth:sign_in')}
-              </Button>
-            </form>
-          ) : (
-            /* Register Form */
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label={t('auth:first_name')}
-                  type="text"
-                  placeholder="John"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                  fullWidth
-                />
-                <Input
-                  label={t('auth:last_name')}
-                  type="text"
-                  placeholder="Doe"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                  fullWidth
-                />
-              </div>
-
-              <Input
-                label={t('auth:email')}
-                type="email"
-                placeholder={t('auth:email_placeholder')}
-                value={registerEmail}
-                onChange={(e) => setRegisterEmail(e.target.value)}
-                required
-                fullWidth
-                leftIcon={
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                  </svg>
-                }
-              />
-
-              <Input
-                label={t('auth:password')}
-                type="password"
-                placeholder={t('auth:password_min_hint')}
-                value={registerPassword}
-                onChange={(e) => setRegisterPassword(e.target.value)}
-                required
-                fullWidth
-                helperText={t('auth:password_min_length')}
-                leftIcon={
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                }
-              />
-
-              <Input
-                label={t('auth:confirm_password')}
-                type="password"
-                placeholder={t('auth:password_placeholder')}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                fullWidth
-                leftIcon={
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                }
-              />
-
-              <Button type="submit" variant="primary" fullWidth size="lg" loading={loading}>
-                {t('auth:create_account')}
-              </Button>
-
-              <p className="text-xs text-gray-500 text-center">
-                {t('auth:terms_agreement')}{' '}
-                <a href="#" className="text-accent-600 hover:text-accent-700">{t('auth:terms')}</a>
-                {' '}{t('auth:and')}{' '}
-                <a href="#" className="text-accent-600 hover:text-accent-700">{t('auth:privacy_policy')}</a>
-              </p>
-            </form>
-          )}
+            <Button type="submit" variant="primary" fullWidth size="lg" loading={loading}>
+              {t('auth:sign_in')}
+            </Button>
+          </form>
 
           {/* Divider */}
           <div className="relative my-6">

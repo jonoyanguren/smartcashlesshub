@@ -1,5 +1,5 @@
 // Auth Controller
-// Authentication operations: register, login, refresh
+// Authentication operations: login, refresh
 
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
@@ -8,143 +8,11 @@ import { ErrorCodes } from '../constants/errorCodes';
 import {
   sendBadRequest,
   sendUnauthorized,
-  sendConflict,
   sendInternalError,
   sendNotFound,
 } from '../utils/errorResponse';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { AuthResponse } from '../types/auth.types';
-
-// Valid user roles
-const VALID_USER_ROLES = ['SUPERADMIN', 'TENANT_ADMIN', 'TENANT_STAFF', 'END_USER'] as const;
-
-// Register new user
-export async function register(req: Request, res: Response) {
-  try {
-    const { email, password, firstName, lastName, phone, tenantId, role } = req.body;
-
-    // Validation
-    if (!email) {
-      return sendBadRequest(res, ErrorCodes.USER_EMAIL_REQUIRED);
-    }
-
-    if (!password) {
-      return sendBadRequest(res, ErrorCodes.AUTH_PASSWORD_REQUIRED);
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return sendBadRequest(res, ErrorCodes.USER_EMAIL_INVALID);
-    }
-
-    // Validate role if provided
-    if (role && !VALID_USER_ROLES.includes(role)) {
-      return sendBadRequest(res, ErrorCodes.USER_ROLE_INVALID);
-    }
-
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      return sendConflict(res, ErrorCodes.USER_EMAIL_ALREADY_EXISTS);
-    }
-
-    // If tenantId provided, validate it exists
-    if (tenantId) {
-      const tenant = await prisma.tenant.findUnique({
-        where: { id: tenantId },
-      });
-
-      if (!tenant) {
-        return sendNotFound(res, ErrorCodes.TENANT_NOT_FOUND);
-      }
-
-      if (!tenant.isActive) {
-        return sendBadRequest(res, ErrorCodes.TENANT_INACTIVE);
-      }
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        phone,
-        globalRole: 'END_USER', // Default role
-      },
-    });
-
-    // If tenantId provided, create tenant relationship
-    let tenantUser = null;
-    if (tenantId) {
-      tenantUser = await prisma.tenantUser.create({
-        data: {
-          userId: user.id,
-          tenantId,
-          role: role || 'END_USER', // Use provided role or default to END_USER
-        },
-        include: {
-          tenant: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-            },
-          },
-        },
-      });
-    }
-
-    // Generate tokens
-    const accessToken = generateAccessToken({
-      userId: user.id,
-      email: user.email,
-      globalRole: user.globalRole,
-      tenantId: tenantUser?.tenantId,
-      tenantRole: tenantUser?.role,
-    });
-
-    const refreshToken = generateRefreshToken(user.id);
-
-    // Build response
-    const response: AuthResponse = {
-      accessToken,
-      refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName || undefined,
-        lastName: user.lastName || undefined,
-        globalRole: user.globalRole,
-      },
-    };
-
-    if (tenantUser) {
-      response.tenant = {
-        id: tenantUser.tenant.id,
-        name: tenantUser.tenant.name,
-        slug: tenantUser.tenant.slug,
-        role: tenantUser.role,
-      };
-    }
-
-    res.status(201).json({
-      success: true,
-      data: response,
-    });
-  } catch (error) {
-    console.error('Error registering user:', error);
-    sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
-  }
-}
 
 // Login user
 export async function login(req: Request, res: Response) {
