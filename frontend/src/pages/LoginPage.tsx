@@ -1,9 +1,10 @@
-import { useState, FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, Card } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { login as apiLogin } from '../api/auth';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -22,29 +23,15 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3001/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.errorCode || 'Login failed');
-      }
+      // Call API login function
+      const response = await apiLogin({ email, password });
 
       // Update auth context
       login(
-        data.data.accessToken,
-        data.data.refreshToken,
-        data.data.user,
-        data.data.tenant
+        response.accessToken,
+        response.refreshToken,
+        response.user,
+        response.tenant
       );
 
       // Redirect to dashboard
