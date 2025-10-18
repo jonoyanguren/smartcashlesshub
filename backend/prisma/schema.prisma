@@ -1,0 +1,171 @@
+// Smart Cashless Hub - Database Schema
+// Starting with core entities: Tenant, User, Event
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// USER ROLES
+// ============================================================================
+
+enum UserRole {
+  SUPERADMIN // Smart Cashless staff - manages all tenants
+  TENANT_ADMIN // Tenant owner - full access to tenant and events
+  TENANT_STAFF // Tenant staff - limited access to dashboard
+  END_USER // Final customer - uses the mobile app
+}
+
+// ============================================================================
+// TENANT (B2B Client)
+// ============================================================================
+
+model Tenant {
+  id          String  @id @default(cuid())
+  name        String // Example: "Club Beso"
+  slug        String  @unique // URL-friendly identifier
+  description String?
+
+  // Contact information
+  contactEmail String?
+  contactPhone String?
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Metadata (JSON for flexibility)
+  // Example: { "logo": "url", "primaryColor": "#FF5733", "settings": {...} }
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users  TenantUser[] // Users who have access to this tenant
+  events Event[] // Events created by this tenant
+
+  @@map("tenants")
+}
+
+// ============================================================================
+// USER (End User + Tenant Staff)
+// ============================================================================
+
+model User {
+  id String @id @default(cuid())
+
+  // Basic info
+  email     String  @unique
+  firstName String?
+  lastName  String?
+  phone     String?
+
+  // Authentication
+  password String // Hashed password with bcrypt
+  djangoUserId String? @unique // Optional: reference to Django user ID for migration
+
+  // Global role (primarily for SUPERADMIN)
+  globalRole UserRole @default(END_USER)
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Metadata (JSON for flexibility)
+  // Example: { "avatar": "url", "preferences": {...} }
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenants TenantUser[] // Tenants this user has access to (with specific roles)
+
+  @@index([email])
+  @@index([djangoUserId])
+  @@index([globalRole])
+  @@map("users")
+}
+
+// ============================================================================
+// TENANT-USER RELATIONSHIP (Many-to-Many with role)
+// ============================================================================
+
+model TenantUser {
+  id String @id @default(cuid())
+
+  // User role within THIS specific tenant
+  role UserRole @default(END_USER)
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, tenantId]) // A user can only have one role per tenant
+  @@index([userId])
+  @@index([tenantId])
+  @@index([role])
+  @@map("tenant_users")
+}
+
+// ============================================================================
+// EVENT (Created by Tenant)
+// ============================================================================
+
+enum EventStatus {
+  DRAFT // Event is being configured
+  SCHEDULED // Event is scheduled for the future
+  ACTIVE // Event is currently happening
+  COMPLETED // Event has ended
+  CANCELLED // Event was cancelled
+}
+
+model Event {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Location
+  location String
+  address  String?
+
+  // Date and time
+  startDate DateTime
+  endDate   DateTime
+
+  // Status
+  status EventStatus @default(DRAFT)
+
+  // Capacity
+  capacity Int? // Maximum attendees (null = unlimited)
+
+  // Tenant relation
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Configuration (JSON for flexibility)
+  // Example: {
+  //   "theme": "night-club",
+  //   "settings": { "allowGuestList": true, "requireVerification": false },
+  //   "features": ["loyalty", "notifications"]
+  // }
+  config Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("events")
+}

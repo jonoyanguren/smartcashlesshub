@@ -1,0 +1,96 @@
+{
+  "nav": {
+    "features": "Features",
+    "how_it_works": "How it works",
+    "pricing": "Pricing",
+    "get_started": "Get started"
+  },
+  "hero": {
+    "title": "Premium event payments,",
+    "title_highlight": "simplified",
+    "subtitle": "Transform your events with our cashless payment platform. Increase revenue, reduce wait times, and deliver unforgettable experiences.",
+    "cta_primary": "Start free trial",
+    "cta_secondary": "Watch demo",
+    "trial_info": "No credit card required • 14-day free trial"
+  },
+  "stats": {
+    "events_powered": "Events powered",
+    "transactions": "Transactions",
+    "uptime": "Uptime",
+    "countries": "Countries"
+  },
+  "features": {
+    "title": "Everything you need for modern events",
+    "subtitle": "Powerful features designed to make your events cashless, seamless, and profitable",
+    "lightning_fast": {
+      "title": "Lightning Fast Payments",
+      "description": "Process transactions in milliseconds with our optimized payment infrastructure."
+    },
+    "real_time_analytics": {
+      "title": "Real-time Analytics",
+      "description": "Track sales, attendance, and performance metrics in real-time dashboards."
+    },
+    "bank_security": {
+      "title": "Bank-level Security",
+      "description": "PCI-DSS compliant infrastructure with end-to-end encryption."
+    },
+    "smart_pricing": {
+      "title": "Smart Pricing",
+      "description": "Dynamic pricing, discounts, and loyalty programs built-in."
+    },
+    "customer_insights": {
+      "title": "Customer Insights",
+      "description": "Understand your audience with detailed customer behavior analytics."
+    },
+    "easy_integration": {
+      "title": "Easy Integration",
+      "description": "Seamless integration with your existing POS and management systems."
+    }
+  },
+  "how_it_works": {
+    "title": "Get started in minutes",
+    "subtitle": "Simple setup, powerful results",
+    "step_1": {
+      "title": "Create your account",
+      "description": "Sign up in seconds and configure your event settings."
+    },
+    "step_2": {
+      "title": "Configure your event",
+      "description": "Add products, set prices, and customize your branding."
+    },
+    "step_3": {
+      "title": "Go live",
+      "description": "Start accepting payments and watch your revenue grow."
+    }
+  },
+  "cta": {
+    "title": "Ready to transform your events?",
+    "subtitle": "Join thousands of event organizers already using Smart Cashless",
+    "cta_primary": "Start free trial",
+    "cta_secondary": "Contact sales"
+  },
+  "footer": {
+    "tagline": "Premium cashless payment solutions for modern events.",
+    "product": {
+      "title": "Product",
+      "features": "Features",
+      "pricing": "Pricing",
+      "security": "Security",
+      "integrations": "Integrations"
+    },
+    "company": {
+      "title": "Company",
+      "about": "About",
+      "blog": "Blog",
+      "careers": "Careers",
+      "contact": "Contact"
+    },
+    "legal": {
+      "title": "Legal",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "security": "Security"
+    },
+    "copyright": "© 2024 Smart Cashless Hub. All rights reserved."
+  }
+}

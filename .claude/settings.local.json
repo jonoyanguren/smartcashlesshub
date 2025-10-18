@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(psql -c \"CREATE DATABASE smart_cashless_hub;\")",
+      "Bash(psql -d postgres -c \"CREATE DATABASE smart_cashless_hub;\")",
+      "Bash(npx prisma migrate dev --name init)",
+      "Bash(psql -d smart_cashless_hub -c \"\\dt\")",
+      "Bash(mkdir -p src/tenant src/user src/event src/middleware)",
+      "Bash(curl http://localhost:*)",
+      "Bash(curl -X * http://localhost:*)",
+      "Bash(curl http://localhost:3001/api/v1/tenants/slug/club-beso)",
+      "Bash(lsof -i :3001)",
+      "Bash(npm run dev)",
+      "Bash(curl http://localhost:3001/api/v1/tenants)",
+      "Bash(curl http://localhost:3001/api/v1/tenants/cmgwjd4wf0000q1khahrxqdb7)",
+      "Bash(curl -X POST http://localhost:3001/api/v1/tenants )",
+      "Bash(curl -X PUT http://localhost:3001/api/v1/tenants/cmgwjmxfd0000q14xt840ltmm )",
+      "Bash(curl -X DELETE http://localhost:3001/api/v1/tenants/cmgwjmxfd0000q14xt840ltmm)",
+      "Bash(curl http://localhost:3001/api/v1/tenants/nonexistent-id-12345)",
+      "Read(//Users/jonoyanguren/**)",
+      "Bash(npx prisma migrate dev --name add_password_to_user)",
+      "Bash(curl http://localhost:3001/api/v1)",
+      "Bash"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "nav": {
+    "features": "Características",
+    "how_it_works": "Cómo funciona",
+    "pricing": "Precios",
+    "get_started": "Comenzar"
+  },
+  "hero": {
+    "title": "Pagos premium para eventos,",
+    "title_highlight": "simplificados",
+    "subtitle": "Transforma tus eventos con nuestra plataforma de pagos sin efectivo. Aumenta ingresos, reduce tiempos de espera y ofrece experiencias inolvidables.",
+    "cta_primary": "Prueba gratuita",
+    "cta_secondary": "Ver demo",
+    "trial_info": "Sin tarjeta de crédito • Prueba gratuita de 14 días"
+  },
+  "stats": {
+    "events_powered": "Eventos potenciados",
+    "transactions": "Transacciones",
+    "uptime": "Disponibilidad",
+    "countries": "Países"
+  },
+  "features": {
+    "title": "Todo lo que necesitas para eventos modernos",
+    "subtitle": "Características poderosas diseñadas para hacer tus eventos sin efectivo, fluidos y rentables",
+    "lightning_fast": {
+      "title": "Pagos Ultrarrápidos",
+      "description": "Procesa transacciones en milisegundos con nuestra infraestructura de pagos optimizada."
+    },
+    "real_time_analytics": {
+      "title": "Analíticas en Tiempo Real",
+      "description": "Rastrea ventas, asistencia y métricas de rendimiento en dashboards en tiempo real."
+    },
+    "bank_security": {
+      "title": "Seguridad Bancaria",
+      "description": "Infraestructura compatible con PCI-DSS y cifrado de extremo a extremo."
+    },
+    "smart_pricing": {
+      "title": "Precios Inteligentes",
+      "description": "Precios dinámicos, descuentos y programas de fidelidad integrados."
+    },
+    "customer_insights": {
+      "title": "Información de Clientes",
+      "description": "Comprende a tu audiencia con analíticas detalladas de comportamiento del cliente."
+    },
+    "easy_integration": {
+      "title": "Integración Fácil",
+      "description": "Integración perfecta con tus sistemas POS y de gestión existentes."
+    }
+  },
+  "how_it_works": {
+    "title": "Comienza en minutos",
+    "subtitle": "Configuración simple, resultados poderosos",
+    "step_1": {
+      "title": "Crea tu cuenta",
+      "description": "Regístrate en segundos y configura los ajustes de tu evento."
+    },
+    "step_2": {
+      "title": "Configura tu evento",
+      "description": "Agrega productos, establece precios y personaliza tu marca."
+    },
+    "step_3": {
+      "title": "Actívate",
+      "description": "Comienza a aceptar pagos y observa cómo crecen tus ingresos."
+    }
+  },
+  "cta": {
+    "title": "¿Listo para transformar tus eventos?",
+    "subtitle": "Únete a miles de organizadores de eventos que ya usan Smart Cashless",
+    "cta_primary": "Prueba gratuita",
+    "cta_secondary": "Contacta con ventas"
+  },
+  "footer": {
+    "tagline": "Soluciones premium de pago sin efectivo para eventos modernos.",
+    "product": {
+      "title": "Producto",
+      "features": "Características",
+      "pricing": "Precios",
+      "security": "Seguridad",
+      "integrations": "Integraciones"
+    },
+    "company": {
+      "title": "Empresa",
+      "about": "Acerca de",
+      "blog": "Blog",
+      "careers": "Carreras",
+      "contact": "Contacto"
+    },
+    "legal": {
+      "title": "Legal",
+      "privacy": "Privacidad",
+      "terms": "Términos",
+      "security": "Seguridad"
+    },
+    "copyright": "© 2024 Smart Cashless Hub. Todos los derechos reservados."
+  }
+}

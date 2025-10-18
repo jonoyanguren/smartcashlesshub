@@ -1,0 +1,404 @@
+# Smart Cashless Hub - Cursor AI Rules
+
+## CRITICAL RULES - READ FIRST
+
+### 1. ENGLISH ONLY - NO EXCEPTIONS
+
+**ALL code, comments, documentation, and messages MUST be in English.**
+
+- Variable names in English
+- Function names in English
+- Comments in English
+- Error messages in English
+- Console logs in English
+- Interface/Type names in English
+- File names in English
+- Git commit messages in English
+
+**Examples:**
+```typescript
+// ✅ CORRECT
+const userName = "John";
+function getCampaigns() { }
+// Fetch all active campaigns
+
+// ❌ WRONG - Never do this
+const nombreUsuario = "John";
+function obtenerCampanas() { }
+// Obtener todas las campañas activas
+```
+
+**If you suggest code in Spanish, you are doing it WRONG. Stop and translate to English.**
+
+### 2. Simplicity First - No Unnecessary Libraries
+
+**This is an MVP. Do NOT add libraries without clear value.**
+
+- ✅ TypeScript for type safety (no Zod, Joi, Yup, etc.)
+- ✅ Simple validation with TypeScript types
+- ❌ NO validation libraries
+- ❌ NO heavy ORMs before needed
+- ❌ NO UI libraries before needed
+
+**Before suggesting a library, ask yourself:**
+1. Can we do this with TypeScript + what we already have?
+2. Does this add real value or just complexity?
+3. Is this necessary for the MVP?
+
+If the answer to #3 is "no", DON'T suggest it.
+
+## Project Context
+
+### What is this project?
+
+Smart Cashless Hub is a marketing, analytics, and loyalty platform built as a **value-added layer** on top of an existing Django cashless payment system.
+
+**Architecture:**
+```
+Web Dashboard (React) ─┐
+                       ├─→ Node.js Gateway ─→ Django Backend
+Mobile App (Expo)     ─┘
+```
+
+### Monorepo Structure
+
+```
+smart-cashless/
+├── backend/      # Node.js + Express API Gateway
+├── frontend/     # React + Vite Web Dashboard
+└── app/          # React Native + Expo Mobile App
+```
+
+## Tech Stack
+
+### Backend
+- Node.js 20.x + Express 4.18
+- TypeScript 5.3 (strict mode)
+- Helmet (security)
+- Morgan (logging)
+- CORS
+
+### Frontend
+- React 19.1
+- Vite 7.1
+- TypeScript 5.9 (strict mode)
+
+### Mobile
+- React Native 0.81
+- Expo 54
+- TypeScript 5.9
+
+## Code Style and Conventions
+
+### Naming Conventions
+
+- **Files (TS/JS):** camelCase (`userService.ts`)
+- **React Components:** PascalCase (`CampaignList.tsx`)
+- **Variables/Functions:** camelCase (`getUserData`)
+- **Types/Interfaces:** PascalCase (`interface User {}`)
+- **Constants:** UPPER_SNAKE_CASE (`const API_URL = ...`)
+
+### TypeScript
+
+**Always use strict mode:**
+```json
+{
+  "strict": true,
+  "noUnusedLocals": true,
+  "noUnusedParameters": true
+}
+```
+
+**Prefer interfaces over types:**
+```typescript
+// ✅ Preferred
+interface User {
+  id: string;
+  email: string;
+}
+
+// ❌ Avoid
+type User = {
+  id: string;
+  email: string;
+}
+```
+
+**Never use `any`:**
+```typescript
+// ❌ Don't do this
+function process(data: any) { }
+
+// ✅ Use unknown and validate
+function process(data: unknown) {
+  if (typeof data === 'object' && data !== null) {
+    // ...
+  }
+}
+```
+
+### Validation Pattern
+
+**No Zod, no validation libraries. Use TypeScript:**
+
+```typescript
+// Define interface
+interface Campaign {
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'inactive';
+}
+
+// Simple validation function
+function isValidCampaign(data: any): data is Campaign {
+  return (
+    typeof data.name === 'string' &&
+    data.name.length > 0 &&
+    typeof data.startDate === 'string' &&
+    typeof data.endDate === 'string' &&
+    ['active', 'inactive'].includes(data.status)
+  );
+}
+
+// Use in endpoint
+router.post('/campaigns', (req, res) => {
+  if (!isValidCampaign(req.body)) {
+    return res.status(400).json({ error: 'Invalid campaign data' });
+  }
+
+  const campaign: Campaign = req.body;
+  // ...
+});
+```
+
+### Error Handling
+
+**Backend - Always use try-catch:**
+```typescript
+router.get('/campaigns', async (req, res) => {
+  try {
+    const campaigns = await getCampaigns();
+    res.json({ success: true, data: campaigns });
+  } catch (error) {
+    console.error('Error fetching campaigns:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch campaigns'
+    });
+  }
+});
+```
+
+**Frontend - Handle API errors:**
+```typescript
+try {
+  const response = await fetch('/api/campaigns');
+  if (!response.ok) throw new Error('Failed to fetch');
+  const data = await response.json();
+  setCampaigns(data);
+} catch (error) {
+  console.error(error);
+  setError('Unable to load campaigns');
+}
+```
+
+### Import Order
+
+```typescript
+// 1. External libraries
+import express from 'express';
+import { Router } from 'express';
+
+// 2. Internal modules (when we have path aliases)
+import type { Campaign } from '@/types/campaign';
+import { validateCampaign } from '@/utils/validators';
+
+// 3. Relative imports
+import CampaignService from './services/campaign';
+```
+
+### Comments
+
+**Write comments in English. Explain WHY, not WHAT:**
+
+```typescript
+// ✅ Good comment
+// Use pagination to avoid loading all campaigns at once for large datasets
+const campaigns = await getCampaigns({ limit: 50, offset: 0 });
+
+// ❌ Bad comment (states the obvious)
+// Get campaigns
+const campaigns = await getCampaigns();
+
+// ❌ WRONG LANGUAGE
+// Obtener campañas con paginación
+const campaigns = await getCampaigns({ limit: 50, offset: 0 });
+```
+
+## File Structure
+
+### Backend Structure
+```
+backend/src/
+├── index.ts              # Entry point
+├── routes/               # Endpoint definitions
+│   ├── campaigns.ts
+│   ├── loyalty.ts
+│   └── notifications.ts
+├── types/                # TypeScript interfaces
+│   ├── campaign.ts
+│   └── user.ts
+├── services/             # Business logic
+│   └── djangoClient.ts
+├── middleware/           # Custom middleware
+│   └── auth.ts
+└── utils/                # Utilities
+    └── validators.ts
+```
+
+### Frontend Structure
+```
+frontend/src/
+├── components/       # Reusable components
+├── pages/           # Pages/views
+├── hooks/           # Custom hooks
+├── services/        # API calls
+├── types/           # TypeScript types
+└── utils/           # Utilities
+```
+
+## What NOT to suggest
+
+### ❌ Don't suggest validation libraries
+```typescript
+// ❌ DON'T suggest this
+import { z } from 'zod';
+const schema = z.object({ name: z.string() });
+
+// ✅ Suggest this instead
+interface Data {
+  name: string;
+}
+function isValidData(data: any): data is Data {
+  return typeof data.name === 'string';
+}
+```
+
+### ❌ Don't suggest heavy ORMs prematurely
+```typescript
+// ❌ DON'T suggest Prisma/TypeORM yet
+import { PrismaClient } from '@prisma/client';
+
+// ✅ Keep it simple for now
+const campaigns = await db.query('SELECT * FROM campaigns');
+```
+
+### ❌ Don't suggest UI libraries yet
+```typescript
+// ❌ DON'T suggest MUI/Chakra yet
+import { Button } from '@mui/material';
+
+// ✅ Use basic HTML/CSS for MVP
+<button className="btn-primary">Click me</button>
+```
+
+### ❌ Don't write in Spanish
+```typescript
+// ❌ NEVER EVER DO THIS
+const datosUsuario = await obtenerUsuario();
+function crearCampana() { }
+```
+
+## What TO suggest
+
+### ✅ Simple, clear TypeScript code
+
+```typescript
+interface Campaign {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+
+async function getCampaigns(): Promise<Campaign[]> {
+  // Simple, direct implementation
+  const response = await fetch(`${DJANGO_API}/campaigns`);
+  if (!response.ok) throw new Error('Failed to fetch campaigns');
+  return await response.json();
+}
+```
+
+### ✅ Minimal, functional solutions
+
+Focus on making it work first. Optimize later.
+
+### ✅ Questions before complexity
+
+If you think we need a library or complex pattern, ASK:
+- "Do we really need X library for this?"
+- "Can we achieve this with TypeScript alone?"
+- "Is this necessary for the MVP?"
+
+## Django Integration
+
+### Environment Variables
+```bash
+NODE_ENV=development
+PORT=3001
+DJANGO_API_URL=http://localhost:8000/api
+JWT_SECRET=your-secret-key
+CORS_ORIGIN=http://localhost:5173
+```
+
+### Example Django Client
+```typescript
+// services/djangoClient.ts
+const DJANGO_API = process.env.DJANGO_API_URL;
+
+async function callDjangoAPI(endpoint: string, options?: RequestInit) {
+  const response = await fetch(`${DJANGO_API}${endpoint}`, options);
+  if (!response.ok) throw new Error(`Django API error: ${response.statusText}`);
+  return await response.json();
+}
+```
+
+## Development Workflow
+
+### Running the project
+```bash
+# Terminal 1: Django backend (existing project)
+cd ../django-backend && python manage.py runserver
+
+# Terminal 2: Node.js Gateway
+cd backend && npm run dev
+
+# Terminal 3: Web Dashboard
+cd frontend && npm run dev
+
+# Terminal 4: Mobile App
+cd app && npm start
+```
+
+## Testing
+
+**Don't suggest tests yet.** We'll add them when we have critical code to test.
+
+## Final Reminders
+
+1. **ENGLISH ONLY** - This is the most important rule
+2. **Simplicity first** - No unnecessary libraries
+3. **TypeScript is enough** - No Zod, Joi, etc.
+4. **Ask before suggesting libraries** - Explain why we need them
+5. **MVP mindset** - Make it work, then make it better
+
+---
+
+When suggesting code, ask yourself:
+- ✅ Is this in English?
+- ✅ Is this simple enough for an MVP?
+- ✅ Am I using TypeScript instead of a library?
+- ✅ Will this add value or just complexity?
+
+If all answers are YES, proceed. Otherwise, reconsider.
