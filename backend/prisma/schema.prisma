@@ -46,8 +46,9 @@ model Tenant {
   updatedAt DateTime @updatedAt
 
   // Relations
-  users  TenantUser[] // Users who have access to this tenant
-  events Event[] // Events created by this tenant
+  users    TenantUser[] // Users who have access to this tenant
+  events   Event[] // Events created by this tenant
+  payments Payment[] // Payments for this tenant
 
   @@map("tenants")
 }
@@ -84,7 +85,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  tenants TenantUser[] // Tenants this user has access to (with specific roles)
+  tenants  TenantUser[] // Tenants this user has access to (with specific roles)
+  payments Payment[] // Payments made by this user
 
   @@index([email])
   @@index([djangoUserId])
@@ -165,8 +167,77 @@ model Event {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  payments Payment[] // Payments made for this event
+
   @@index([tenantId])
   @@index([status])
   @@index([startDate, endDate])
   @@map("events")
+}
+
+// ============================================================================
+// PAYMENT (Mirrored from Django)
+// ============================================================================
+
+enum PaymentStatus {
+  PENDING // Payment initiated but not yet confirmed
+  COMPLETED // Payment successfully processed
+  REFUNDED // Payment was refunded
+}
+
+enum PaymentMethod {
+  BRACELET // Cashless bracelet/wristband (main method)
+  CARD // Credit/Debit card
+  CASH // Cash payment
+  WALLET // Digital wallet (e.g., Apple Pay, Google Pay)
+  TRANSFER // Bank transfer
+  OTHER // Other payment methods
+}
+
+model Payment {
+  id String @id @default(cuid())
+
+  // Amount
+  amount   Decimal @db.Decimal(10, 2) // e.g., 25.50
+  currency String  @default("EUR") // ISO currency code
+
+  // Payment details
+  paymentMethod PaymentMethod
+  status        PaymentStatus @default(PENDING)
+
+  // Django integration
+  djangoPaymentId String? @unique // Payment ID from Django for sync
+
+  // Relations
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Metadata (JSON for flexibility)
+  // Example: {
+  //   "description": "Entry ticket + 2 drinks",
+  //   "items": [{"name": "Entry", "price": 10}, {"name": "Drink", "price": 7.75, "quantity": 2}],
+  //   "braceletId": "BR123456"
+  // }
+  metadata Json?
+
+  // Timestamps
+  paidAt    DateTime? // When the payment was completed (null if still PENDING)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([eventId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([paymentMethod])
+  @@index([paidAt])
+  @@index([djangoPaymentId])
+  @@map("payments")
 }

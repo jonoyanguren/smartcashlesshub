@@ -3,13 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card, LoadingState, Button } from '../../components/ui';
 import { getEvents, type Event } from '../../api/events';
+import { getEventPaymentStats, type PaymentStats } from '../../api/payments';
 
 const EventDetailStatsPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation(['dashboard']);
   const [event, setEvent] = useState<Event | null>(null);
+  const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   useEffect(() => {
     loadEvent();
@@ -21,10 +24,28 @@ const EventDetailStatsPage = () => {
       const events = await getEvents();
       const foundEvent = events.find((e) => e.id === eventId);
       setEvent(foundEvent || null);
+
+      // Load payment stats if event found
+      if (foundEvent) {
+        loadPaymentStats(foundEvent.id);
+      }
     } catch (error) {
       console.error('Error loading event:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPaymentStats = async (eventId: string) => {
+    try {
+      setStatsLoading(true);
+      const stats = await getEventPaymentStats(eventId);
+      setPaymentStats(stats);
+    } catch (error) {
+      console.error('Error loading payment stats:', error);
+      // Don't show error to user - just keep showing no data
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -161,174 +182,291 @@ const EventDetailStatsPage = () => {
         </Card>
       </div>
 
-      {/* Payment Stats - Placeholders */}
+      {/* Payment Stats - Real Data */}
       <div>
         <h2 className="text-xl font-bold text-gray-900 mb-4">
           {t('dashboard:stats.payment_stats', { defaultValue: 'Payment Statistics' })}
-          <span className="ml-3 text-sm font-normal text-gray-500">
-            ({t('dashboard:stats.coming_soon', { defaultValue: 'Coming soon from Django' })})
-          </span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gray-50 opacity-50"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    {t('dashboard:stats.event_revenue', { defaultValue: 'Event Revenue' })}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-400 mt-2">€0.00</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {t('dashboard:stats.pending_integration', { defaultValue: 'Pending Django integration' })}
-                  </p>
-                </div>
-                <div className="p-3 bg-gray-200 rounded-lg">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  {t('dashboard:stats.event_revenue', { defaultValue: 'Event Revenue' })}
+                </p>
+                {statsLoading ? (
+                  <p className="text-3xl font-bold text-gray-400 mt-2">...</p>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">
+                      €{paymentStats?.totalRevenue.toFixed(2) || '0.00'}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      {paymentStats?.totalTransactions || 0} completed payments
+                    </p>
+                  </>
+                )}
+              </div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
             </div>
           </Card>
 
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gray-50 opacity-50"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    {t('dashboard:stats.total_transactions', { defaultValue: 'Transactions' })}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-400 mt-2">0</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {t('dashboard:stats.pending_integration', { defaultValue: 'Pending Django integration' })}
-                  </p>
-                </div>
-                <div className="p-3 bg-gray-200 rounded-lg">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  {t('dashboard:stats.total_transactions', { defaultValue: 'Transactions' })}
+                </p>
+                {statsLoading ? (
+                  <p className="text-3xl font-bold text-gray-400 mt-2">...</p>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">
+                      {paymentStats?.totalTransactions || 0}
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Completed payments
+                    </p>
+                  </>
+                )}
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
               </div>
             </div>
           </Card>
 
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gray-50 opacity-50"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    {t('dashboard:stats.avg_transaction', { defaultValue: 'Avg. Transaction' })}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-400 mt-2">€0.00</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {t('dashboard:stats.pending_integration', { defaultValue: 'Pending Django integration' })}
-                  </p>
-                </div>
-                <div className="p-3 bg-gray-200 rounded-lg">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                  </svg>
-                </div>
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  {t('dashboard:stats.avg_transaction', { defaultValue: 'Avg. Transaction' })}
+                </p>
+                {statsLoading ? (
+                  <p className="text-3xl font-bold text-gray-400 mt-2">...</p>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">
+                      €{paymentStats?.avgTransaction.toFixed(2) || '0.00'}
+                    </p>
+                    <p className="text-xs text-purple-600 mt-1">
+                      Per transaction
+                    </p>
+                  </>
+                )}
+              </div>
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
               </div>
             </div>
           </Card>
         </div>
       </div>
 
-      {/* Revenue Over Time - Placeholder Chart */}
-      <Card className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gray-50 opacity-30"></div>
-        <div className="relative">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {t('dashboard:stats.revenue_over_time', { defaultValue: 'Revenue Over Time' })}
-            <span className="ml-3 text-sm font-normal text-gray-500">
-              ({t('dashboard:stats.coming_soon', { defaultValue: 'Coming soon from Django' })})
-            </span>
-          </h3>
+      {/* Revenue Over Time - Real Data */}
+      <Card>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          {t('dashboard:stats.revenue_over_time', { defaultValue: 'Revenue Over Time' })}
+        </h3>
+        {statsLoading ? (
           <div className="h-64 flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <svg className="mx-auto w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-              </svg>
-              <p className="text-sm">
-                {t('dashboard:stats.chart_coming_soon', { defaultValue: 'Chart will display revenue trends over time' })}
-              </p>
+            <p className="text-gray-400">Loading...</p>
+          </div>
+        ) : paymentStats && Object.keys(paymentStats.revenueByHour).length > 0 ? (
+          <div className="h-64">
+            <div className="flex items-end justify-between h-full pb-8 gap-2">
+              {Array.from({ length: 24 }, (_, hour) => {
+                const revenue = paymentStats.revenueByHour[hour] || 0;
+                const maxRevenue = Math.max(...Object.values(paymentStats.revenueByHour), 1);
+                const heightPercentage = (revenue / maxRevenue) * 100;
+                const hasData = revenue > 0;
+                return (
+                  <div key={hour} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                    <div
+                      className={`w-full rounded-t transition-all ${hasData ? 'bg-gradient-to-t from-green-500 to-green-400 hover:from-green-600 hover:to-green-500' : 'bg-gray-200'}`}
+                      style={{ height: `${Math.max(heightPercentage, hasData ? 3 : 1)}%` }}
+                    >
+                      {hasData && (
+                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                          {hour}:00<br/>€{revenue.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                    {hour % 3 === 0 && (
+                      <span className="text-xs text-gray-500 mt-2 absolute bottom-0">{hour}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </div>
-      </Card>
-
-      {/* User Activations - Placeholder */}
-      <Card className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gray-50 opacity-30"></div>
-        <div className="relative">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {t('dashboard:stats.user_activations', { defaultValue: 'User Activations' })}
-            <span className="ml-3 text-sm font-normal text-gray-500">
-              ({t('dashboard:stats.coming_soon', { defaultValue: 'Coming soon from Django' })})
-            </span>
-          </h3>
+        ) : (
           <div className="h-64 flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <svg className="mx-auto w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-              <p className="text-sm">
-                {t('dashboard:stats.activations_coming_soon', { defaultValue: 'Track user activations and engagement' })}
-              </p>
-            </div>
+            <p className="text-gray-400 text-sm">No revenue data available</p>
           </div>
-        </div>
+        )}
       </Card>
 
-      {/* Transaction Types Distribution - Placeholder */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gray-50 opacity-30"></div>
-          <div className="relative">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {t('dashboard:stats.payment_methods', { defaultValue: 'Payment Methods' })}
-              <span className="ml-3 text-sm font-normal text-gray-500">
-                ({t('dashboard:stats.coming_soon', { defaultValue: 'Coming soon from Django' })})
-              </span>
-            </h3>
-            <div className="h-48 flex items-center justify-center">
-              <div className="text-center text-gray-400">
-                <svg className="mx-auto w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-                </svg>
-                <p className="text-xs">
-                  {t('dashboard:stats.payment_dist', { defaultValue: 'Payment method distribution' })}
-                </p>
+      {/* User Activations - Real Data */}
+      <Card>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          {t('dashboard:stats.user_activations', { defaultValue: 'Payment Activity Summary' })}
+        </h3>
+        {statsLoading ? (
+          <div className="h-64 flex items-center justify-center">
+            <p className="text-gray-400">Loading...</p>
+          </div>
+        ) : paymentStats ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+              <div className="flex justify-center mb-3">
+                <div className="p-3 bg-blue-500 rounded-full">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
               </div>
+              <p className="text-3xl font-bold text-blue-900">{paymentStats.totalTransactions}</p>
+              <p className="text-sm text-blue-700 mt-1">Total Payments</p>
+            </div>
+
+            <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+              <div className="flex justify-center mb-3">
+                <div className="p-3 bg-green-500 rounded-full">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-green-900">
+                €{paymentStats.totalRevenue.toFixed(0)}
+              </p>
+              <p className="text-sm text-green-700 mt-1">Total Revenue</p>
+            </div>
+
+            <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+              <div className="flex justify-center mb-3">
+                <div className="p-3 bg-purple-500 rounded-full">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-purple-900">
+                €{paymentStats.avgTransaction.toFixed(2)}
+              </p>
+              <p className="text-sm text-purple-700 mt-1">Avg. Transaction</p>
+            </div>
+
+            <div className="text-center p-6 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg">
+              <div className="flex justify-center mb-3">
+                <div className="p-3 bg-amber-500 rounded-full">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-amber-900">
+                {Object.keys(paymentStats.revenueByHour).length}
+              </p>
+              <p className="text-sm text-amber-700 mt-1">Active Hours</p>
             </div>
           </div>
+        ) : (
+          <div className="h-64 flex items-center justify-center">
+            <p className="text-gray-400 text-sm">No activity data available</p>
+          </div>
+        )}
+      </Card>
+
+      {/* Transaction Types Distribution - Real Data */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            {t('dashboard:stats.payment_methods', { defaultValue: 'Payment Methods' })}
+          </h3>
+          {statsLoading ? (
+            <div className="h-48 flex items-center justify-center">
+              <p className="text-gray-400">Loading...</p>
+            </div>
+          ) : paymentStats && Object.keys(paymentStats.paymentMethodStats).length > 0 ? (
+            <div className="space-y-3">
+              {Object.entries(paymentStats.paymentMethodStats)
+                .sort(([, a], [, b]) => b - a)
+                .map(([method, count]) => {
+                  const total = Object.values(paymentStats.paymentMethodStats).reduce((sum, val) => sum + val, 0);
+                  const percentage = total > 0 ? (count / total) * 100 : 0;
+                  const methodColors: Record<string, string> = {
+                    BRACELET: 'bg-purple-500',
+                    CARD: 'bg-blue-500',
+                    CASH: 'bg-green-500',
+                    WALLET: 'bg-amber-500',
+                    TRANSFER: 'bg-cyan-500',
+                    OTHER: 'bg-gray-500',
+                  };
+                  return (
+                    <div key={method}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-700">{method}</span>
+                        <span className="text-sm text-gray-600">{count} ({percentage.toFixed(1)}%)</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`${methodColors[method] || 'bg-gray-500'} h-2 rounded-full transition-all duration-300`}
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          ) : (
+            <div className="h-48 flex items-center justify-center">
+              <p className="text-gray-400 text-sm">No payment data available</p>
+            </div>
+          )}
         </Card>
 
-        <Card className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gray-50 opacity-30"></div>
-          <div className="relative">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {t('dashboard:stats.hourly_activity', { defaultValue: 'Hourly Activity' })}
-              <span className="ml-3 text-sm font-normal text-gray-500">
-                ({t('dashboard:stats.coming_soon', { defaultValue: 'Coming soon from Django' })})
-              </span>
-            </h3>
+        <Card>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            {t('dashboard:stats.hourly_activity', { defaultValue: 'Hourly Activity' })}
+          </h3>
+          {statsLoading ? (
             <div className="h-48 flex items-center justify-center">
-              <div className="text-center text-gray-400">
-                <svg className="mx-auto w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <p className="text-xs">
-                  {t('dashboard:stats.hourly_dist', { defaultValue: 'Activity by hour of day' })}
-                </p>
-              </div>
+              <p className="text-gray-400">Loading...</p>
             </div>
-          </div>
+          ) : paymentStats && Object.keys(paymentStats.revenueByHour).length > 0 ? (
+            <div className="h-48 flex items-end justify-between gap-1">
+              {Array.from({ length: 24 }, (_, hour) => {
+                const revenue = paymentStats.revenueByHour[hour] || 0;
+                const maxRevenue = Math.max(...Object.values(paymentStats.revenueByHour), 1);
+                const heightPercentage = (revenue / maxRevenue) * 100;
+                return (
+                  <div key={hour} className="flex-1 flex flex-col items-center group">
+                    <div className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors relative"
+                         style={{ height: `${Math.max(heightPercentage, 2)}%` }}
+                         title={`${hour}:00 - €${revenue.toFixed(2)}`}>
+                    </div>
+                    {hour % 3 === 0 && (
+                      <span className="text-xs text-gray-500 mt-1">{hour}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-48 flex items-center justify-center">
+              <p className="text-gray-400 text-sm">No hourly data available</p>
+            </div>
+          )}
         </Card>
       </div>
     </div>
