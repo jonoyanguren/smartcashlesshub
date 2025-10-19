@@ -1,4 +1,5 @@
-import { TableHTMLAttributes, forwardRef } from 'react';
+import { forwardRef } from 'react';
+import type { TableHTMLAttributes } from 'react';
 
 export interface Column<T> {
   key: string;
