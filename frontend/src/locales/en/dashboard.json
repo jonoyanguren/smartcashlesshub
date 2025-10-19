@@ -1,4 +1,97 @@
 {
   "title": "Dashboard",
-  "welcome": "Welcome to your dashboard!"
+  "welcome": "Welcome back",
+  "overview_subtitle": "Here's what's happening with your events today.",
+  "tenant_role": "Role",
+  "tenant_slug": "Slug",
+  "recent_activity": "Recent Activity",
+  "quick_actions": "Quick Actions",
+  "create_event": "Create New Event",
+  "create_event_desc": "Set up a new event for your venue",
+  "add_user": "Add User",
+  "add_user_desc": "Invite staff or customers",
+  "view_reports": "View Reports",
+  "view_reports_desc": "Check your analytics and insights",
+  "nav": {
+    "overview": "Overview",
+    "events": "Events",
+    "users": "Users",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "stats": {
+    "total_events": "Total Events",
+    "active_users": "Active Users",
+    "revenue": "Revenue",
+    "transactions": "Transactions"
+  },
+  "events": {
+    "title": "Events",
+    "subtitle": "Manage your events and track attendance",
+    "create_event": "Create Event",
+    "all_statuses": "All Statuses",
+    "search_placeholder": "Search events...",
+    "edit": "Edit",
+    "view": "View",
+    "no_events": "No events",
+    "no_events_desc": "Get started by creating a new event.",
+    "table": {
+      "name": "Event Name",
+      "status": "Status",
+      "dates": "Dates",
+      "attendees": "Attendees",
+      "actions": "Actions"
+    }
+  },
+  "users": {
+    "title": "Users",
+    "subtitle": "Manage staff and customer accounts",
+    "add_user": "Add User",
+    "all_roles": "All Roles",
+    "search_placeholder": "Search users...",
+    "edit": "Edit",
+    "delete": "Delete",
+    "no_users": "No users found",
+    "no_users_desc": "Try adjusting your filters or add a new user.",
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "status": "Status",
+      "created": "Created",
+      "actions": "Actions"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account and tenant preferences",
+    "profile_title": "Profile Information",
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "email": "Email",
+    "save_changes": "Save Changes",
+    "password_title": "Change Password",
+    "current_password": "Current Password",
+    "new_password": "New Password",
+    "confirm_password": "Confirm Password",
+    "update_password": "Update Password",
+    "tenant_title": "Tenant Settings",
+    "tenant_name": "Tenant Name",
+    "tenant_slug": "Slug",
+    "description": "Description",
+    "description_placeholder": "Tell us about your venue...",
+    "notifications_title": "Notification Preferences",
+    "email_notifications": "Email Notifications",
+    "email_notifications_desc": "Receive email updates about your events",
+    "push_notifications": "Push Notifications",
+    "push_notifications_desc": "Receive push notifications on your devices",
+    "marketing_emails": "Marketing Emails",
+    "marketing_emails_desc": "Receive updates about new features",
+    "danger_zone": "Danger Zone",
+    "deactivate_account": "Deactivate Account",
+    "deactivate_account_desc": "Temporarily disable your account",
+    "deactivate": "Deactivate",
+    "delete_account": "Delete Account",
+    "delete_account_desc": "Permanently delete your account and all data",
+    "delete": "Delete"
+  }
 }

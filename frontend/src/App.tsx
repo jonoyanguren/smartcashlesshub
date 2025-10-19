@@ -3,29 +3,33 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
-// Placeholder Dashboard component - will be created properly later
-const Dashboard = () => (
-  <div className="min-h-screen bg-gray-50 p-8">
-    <div className="max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-      <p className="mt-2 text-gray-600">Welcome to your dashboard!</p>
-    </div>
-  </div>
-);
+// Dashboard Layout and Pages
+import DashboardLayout from './layouts/DashboardLayout';
+import OverviewPage from './pages/dashboard/OverviewPage';
+import EventsPage from './pages/dashboard/EventsPage';
+import UsersPage from './pages/dashboard/UsersPage';
+import SettingsPage from './pages/dashboard/SettingsPage';
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
+
+      {/* Protected Dashboard Routes */}
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<OverviewPage />} />
+        <Route path="events" element={<EventsPage />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
     </Routes>
   );
 }

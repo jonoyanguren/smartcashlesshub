@@ -1,4 +1,97 @@
 {
   "title": "Panel de Control",
-  "welcome": "¡Bienvenido a tu panel de control!"
+  "welcome": "Bienvenido de nuevo",
+  "overview_subtitle": "Esto es lo que está pasando con tus eventos hoy.",
+  "tenant_role": "Rol",
+  "tenant_slug": "Slug",
+  "recent_activity": "Actividad Reciente",
+  "quick_actions": "Acciones Rápidas",
+  "create_event": "Crear Nuevo Evento",
+  "create_event_desc": "Configura un nuevo evento para tu local",
+  "add_user": "Añadir Usuario",
+  "add_user_desc": "Invita a staff o clientes",
+  "view_reports": "Ver Informes",
+  "view_reports_desc": "Revisa tus análisis e insights",
+  "nav": {
+    "overview": "Resumen",
+    "events": "Eventos",
+    "users": "Usuarios",
+    "settings": "Configuración",
+    "logout": "Cerrar Sesión"
+  },
+  "stats": {
+    "total_events": "Total de Eventos",
+    "active_users": "Usuarios Activos",
+    "revenue": "Ingresos",
+    "transactions": "Transacciones"
+  },
+  "events": {
+    "title": "Eventos",
+    "subtitle": "Gestiona tus eventos y seguimiento de asistencia",
+    "create_event": "Crear Evento",
+    "all_statuses": "Todos los Estados",
+    "search_placeholder": "Buscar eventos...",
+    "edit": "Editar",
+    "view": "Ver",
+    "no_events": "No hay eventos",
+    "no_events_desc": "Comienza creando un nuevo evento.",
+    "table": {
+      "name": "Nombre del Evento",
+      "status": "Estado",
+      "dates": "Fechas",
+      "attendees": "Asistentes",
+      "actions": "Acciones"
+    }
+  },
+  "users": {
+    "title": "Usuarios",
+    "subtitle": "Gestiona cuentas de staff y clientes",
+    "add_user": "Añadir Usuario",
+    "all_roles": "Todos los Roles",
+    "search_placeholder": "Buscar usuarios...",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "no_users": "No se encontraron usuarios",
+    "no_users_desc": "Prueba ajustando tus filtros o añade un nuevo usuario.",
+    "table": {
+      "user": "Usuario",
+      "role": "Rol",
+      "status": "Estado",
+      "created": "Creado",
+      "actions": "Acciones"
+    }
+  },
+  "settings": {
+    "title": "Configuración",
+    "subtitle": "Gestiona tu cuenta y preferencias del tenant",
+    "profile_title": "Información del Perfil",
+    "first_name": "Nombre",
+    "last_name": "Apellido",
+    "email": "Email",
+    "save_changes": "Guardar Cambios",
+    "password_title": "Cambiar Contraseña",
+    "current_password": "Contraseña Actual",
+    "new_password": "Nueva Contraseña",
+    "confirm_password": "Confirmar Contraseña",
+    "update_password": "Actualizar Contraseña",
+    "tenant_title": "Configuración del Tenant",
+    "tenant_name": "Nombre del Tenant",
+    "tenant_slug": "Slug",
+    "description": "Descripción",
+    "description_placeholder": "Cuéntanos sobre tu local...",
+    "notifications_title": "Preferencias de Notificaciones",
+    "email_notifications": "Notificaciones por Email",
+    "email_notifications_desc": "Recibe actualizaciones por email sobre tus eventos",
+    "push_notifications": "Notificaciones Push",
+    "push_notifications_desc": "Recibe notificaciones push en tus dispositivos",
+    "marketing_emails": "Emails de Marketing",
+    "marketing_emails_desc": "Recibe actualizaciones sobre nuevas funcionalidades",
+    "danger_zone": "Zona de Peligro",
+    "deactivate_account": "Desactivar Cuenta",
+    "deactivate_account_desc": "Desactiva temporalmente tu cuenta",
+    "deactivate": "Desactivar",
+    "delete_account": "Eliminar Cuenta",
+    "delete_account_desc": "Elimina permanentemente tu cuenta y todos los datos",
+    "delete": "Eliminar"
+  }
 }

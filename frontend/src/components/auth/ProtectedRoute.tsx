@@ -1,5 +1,5 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,7 +9,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    // Show loading spinner while checking auth state
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -21,7 +20,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!isAuthenticated) {
-    // Redirect to login if not authenticated
     return <Navigate to="/login" replace />;
   }
 
