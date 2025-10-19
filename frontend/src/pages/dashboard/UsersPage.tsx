@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { Card, Button, LoadingState } from '../../components/ui';
 import UnauthorizedState from '../../components/ui/UnauthorizedState';
 import { getUsers, deleteUser, type User, type CreateUserResponse } from '../../api/users';
@@ -8,6 +9,7 @@ import PasswordDisplayModal from '../../components/users/PasswordDisplayModal';
 
 const UsersPage = () => {
   const { t } = useTranslation(['dashboard']);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +20,17 @@ const UsersPage = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newUserData, setNewUserData] = useState<{ email: string; password: string } | null>(null);
+
+  // Check URL params to auto-open create modal
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'create') {
+      setShowCreateModal(true);
+      // Remove the param from URL
+      searchParams.delete('action');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Fetch users from API
   useEffect(() => {

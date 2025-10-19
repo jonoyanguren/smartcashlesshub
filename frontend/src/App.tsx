@@ -9,6 +9,8 @@ import DashboardLayout from './layouts/DashboardLayout';
 import OverviewPage from './pages/dashboard/OverviewPage';
 import EventsPage from './pages/dashboard/EventsPage';
 import EventPreviewPage from './pages/dashboard/EventPreviewPage';
+import EventStatsPage from './pages/dashboard/EventStatsPage';
+import EventDetailStatsPage from './pages/dashboard/EventDetailStatsPage';
 import UsersPage from './pages/dashboard/UsersPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 
@@ -40,6 +42,8 @@ function App() {
         <Route index element={<OverviewPage />} />
         <Route path="events" element={<EventsPage />} />
         <Route path="events/:eventId/preview" element={<EventPreviewPage />} />
+        <Route path="events/:eventId/stats" element={<EventDetailStatsPage />} />
+        <Route path="stats" element={<EventStatsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

@@ -1,12 +1,14 @@
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui';
 import { useState, useEffect } from 'react';
 import { getEvents, type Event } from '../../api/events';
 import { getUsers, type User } from '../../api/users';
 
 // Helper function to format relative time
-const formatRelativeTime = (date: string, t: any): string => {
+const formatRelativeTime = (date: string, t: TFunction): string => {
   const now = new Date();
   const past = new Date(date);
   const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
@@ -46,8 +48,22 @@ interface Activity {
 const OverviewPage = () => {
   const { user, tenant } = useAuth();
   const { t } = useTranslation(['dashboard', 'common']);
+  const navigate = useNavigate();
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(true);
+
+  // Quick action handlers
+  const handleCreateEvent = () => {
+    navigate('/dashboard/events?action=create');
+  };
+
+  const handleAddUser = () => {
+    navigate('/dashboard/users?action=create');
+  };
+
+  const handleViewReports = () => {
+    navigate('/dashboard/stats');
+  };
 
   // Load recent activity
   useEffect(() => {
@@ -283,7 +299,10 @@ const OverviewPage = () => {
             {t('dashboard:quick_actions', { defaultValue: 'Quick Actions' })}
           </h3>
           <div className="space-y-3">
-            <button className="w-full flex items-center gap-3 p-3 text-left border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all">
+            <button
+              onClick={handleCreateEvent}
+              className="w-full flex items-center gap-3 p-3 text-left border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all"
+            >
               <div className="flex-shrink-0 w-10 h-10 bg-accent-100 rounded-lg flex items-center justify-center text-accent-600">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -301,7 +320,10 @@ const OverviewPage = () => {
               </div>
             </button>
 
-            <button className="w-full flex items-center gap-3 p-3 text-left border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all">
+            <button
+              onClick={handleAddUser}
+              className="w-full flex items-center gap-3 p-3 text-left border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all"
+            >
               <div className="flex-shrink-0 w-10 h-10 bg-accent-100 rounded-lg flex items-center justify-center text-accent-600">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -319,7 +341,10 @@ const OverviewPage = () => {
               </div>
             </button>
 
-            <button className="w-full flex items-center gap-3 p-3 text-left border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all">
+            <button
+              onClick={handleViewReports}
+              className="w-full flex items-center gap-3 p-3 text-left border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all"
+            >
               <div className="flex-shrink-0 w-10 h-10 bg-accent-100 rounded-lg flex items-center justify-center text-accent-600">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Button, LoadingState } from '../../components/ui';
 import { getEvents, type Event } from '../../api/events';
 import CreateEventModal from '../../components/events/CreateEventModal';
@@ -8,6 +8,7 @@ import CreateEventModal from '../../components/events/CreateEventModal';
 const EventsPage = () => {
   const { t } = useTranslation(['dashboard']);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,6 +17,17 @@ const EventsPage = () => {
   const [searchText, setSearchText] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+
+  // Check URL params to auto-open create modal
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'create') {
+      setShowCreateModal(true);
+      // Remove the param from URL
+      searchParams.delete('action');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Fetch events from API (only once on mount)
   useEffect(() => {
@@ -58,6 +70,10 @@ const EventsPage = () => {
 
   const handleViewEvent = (eventId: string) => {
     navigate(`/dashboard/events/${eventId}/preview`);
+  };
+
+  const handleViewStats = (eventId: string) => {
+    navigate(`/dashboard/events/${eventId}/stats`);
   };
 
   const handleCloseModal = () => {
@@ -202,17 +218,25 @@ const EventsPage = () => {
           {filteredEvents.map((event) => (
             <Card key={event.id} hoverable className="cursor-pointer">
               <div className="space-y-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
                     {event.name}
                   </h3>
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                      event.status
-                    )}`}
-                  >
-                    {event.status}
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    {event.status === 'ACTIVE' && (
+                      <span className="px-2 py-1 text-xs font-bold rounded bg-red-600 text-white flex items-center gap-1 animate-pulse">
+                        <span className="w-2 h-2 bg-white rounded-full"></span>
+                        {t('dashboard:events.live_now', { defaultValue: 'LIVE NOW' })}
+                      </span>
+                    )}
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                        event.status
+                      )}`}
+                    >
+                      {t(`dashboard:events.status.${event.status}`, { defaultValue: event.status })}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="space-y-2 text-sm text-gray-600">
@@ -244,12 +268,20 @@ const EventsPage = () => {
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-gray-200 flex gap-2">
-                  <Button variant="outline" size="sm" fullWidth onClick={() => handleEditEvent(event)}>
-                    {t('dashboard:events.edit', { defaultValue: 'Edit' })}
-                  </Button>
-                  <Button variant="primary" size="sm" fullWidth onClick={() => handleViewEvent(event.id)}>
-                    {t('dashboard:events.view', { defaultValue: 'View' })}
+                <div className="pt-4 border-t border-gray-200 space-y-2">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" fullWidth onClick={() => handleEditEvent(event)}>
+                      {t('dashboard:events.edit', { defaultValue: 'Edit' })}
+                    </Button>
+                    <Button variant="primary" size="sm" fullWidth onClick={() => handleViewEvent(event.id)}>
+                      {t('dashboard:events.view', { defaultValue: 'View' })}
+                    </Button>
+                  </div>
+                  <Button variant="ghost" size="sm" fullWidth onClick={() => handleViewStats(event.id)}>
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    {t('dashboard:events.view_stats', { defaultValue: 'View Stats' })}
                   </Button>
                 </div>
               </div>
@@ -287,13 +319,21 @@ const EventsPage = () => {
                       <div className="text-sm text-gray-500">{event.location}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                          event.status
-                        )}`}
-                      >
-                        {event.status}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        {event.status === 'ACTIVE' && (
+                          <span className="px-2 py-1 text-xs font-bold rounded bg-red-600 text-white flex items-center gap-1 w-fit animate-pulse">
+                            <span className="w-2 h-2 bg-white rounded-full"></span>
+                            {t('dashboard:events.live_now', { defaultValue: 'LIVE NOW' })}
+                          </span>
+                        )}
+                        <span
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                            event.status
+                          )}`}
+                        >
+                          {t(`dashboard:events.status.${event.status}`, { defaultValue: event.status })}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(event.startDate).toLocaleDateString()} -{' '}
