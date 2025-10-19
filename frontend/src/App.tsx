@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Dashboard Layout and Pages
@@ -16,6 +17,16 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
+
+      {/* Change Password - Protected but allows mustChangePassword users */}
+      <Route
+        path="/change-password"
+        element={
+          <ProtectedRoute requirePasswordChange={false}>
+            <ChangePasswordPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Protected Dashboard Routes */}
       <Route

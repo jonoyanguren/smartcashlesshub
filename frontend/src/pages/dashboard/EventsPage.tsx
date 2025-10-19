@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button } from '../../components/ui';
+import { Card, Button, LoadingState } from '../../components/ui';
 import { getEvents, type Event } from '../../api/events';
 import CreateEventModal from '../../components/events/CreateEventModal';
 
@@ -85,14 +85,10 @@ const EventsPage = () => {
   // Loading state
   if (loading && events.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-accent-200 border-t-accent-600 rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">
-            {t('dashboard:events.loading', { defaultValue: 'Loading events...' })}
-          </p>
-        </div>
-      </div>
+      <LoadingState
+        size="lg"
+        message={t('dashboard:events.loading', { defaultValue: 'Loading events...' })}
+      />
     );
   }
 

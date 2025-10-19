@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { clearTokens } from '../api';
 
 interface User {
   id: string;
@@ -85,11 +86,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const logout = () => {
-    // Clear localStorage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('tenant');
+    // Clear tokens using centralized function
+    clearTokens();
 
     // Clear state
     setAccessToken(null);

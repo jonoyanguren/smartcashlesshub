@@ -99,19 +99,77 @@
     "title": "Users",
     "subtitle": "Manage staff and customer accounts",
     "add_user": "Add User",
+    "unauthorized_title": "Unauthorized Access",
+    "unauthorized_description": "You do not have permission to manage users. Please contact your administrator if you believe this is an error.",
+    "create_user": "Create User",
+    "edit_user": "Edit User",
+    "save_changes": "Save Changes",
     "all_roles": "All Roles",
     "search_placeholder": "Search users...",
+    "loading": "Loading users...",
     "edit": "Edit",
     "delete": "Delete",
+    "confirm_delete": "Are you sure you want to remove {{email}} from this tenant?",
     "no_users": "No users found",
     "no_users_desc": "Try adjusting your filters or add a new user.",
+    "stats": {
+      "admins": "Admins",
+      "staff": "Staff",
+      "customers": "Customers",
+      "total": "Total"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "roles": {
+      "tenant_admin": "Admin",
+      "tenant_staff": "Staff",
+      "end_user": "Customer",
+      "superadmin": "Super Admin"
+    },
     "table": {
       "user": "User",
       "role": "Role",
       "status": "Status",
       "created": "Created",
       "actions": "Actions"
+    },
+    "form": {
+      "email": "Email",
+      "email_placeholder": "user@example.com",
+      "email_cannot_change": "Email cannot be changed",
+      "first_name": "First Name",
+      "first_name_placeholder": "John",
+      "last_name": "Last Name",
+      "last_name_placeholder": "Doe",
+      "phone": "Phone",
+      "phone_placeholder": "+34 600 000 000",
+      "role": "Role",
+      "password_info": "A temporary password will be generated and shown once. The user must change it on first login.",
+      "errors": {
+        "email_required": "Email is required",
+        "email_invalid": "Email is invalid",
+        "role_required": "Role is required"
+      }
+    },
+    "password_modal": {
+      "title": "User Created Successfully",
+      "user_created": "User created for",
+      "warning_title": "Important: Save This Password",
+      "warning_message": "This is the only time you will see this password. Make sure to copy it and share it securely with the user.",
+      "temporary_password": "Temporary Password",
+      "copy": "Copy to clipboard",
+      "copied": "Copied to clipboard!",
+      "next_steps": "Next Steps",
+      "step1": "Share this password securely with the user",
+      "step2": "User must change password on first login",
+      "step3": "Password cannot be recovered after closing this window",
+      "close": "I Have Saved The Password"
     }
+  },
+  "common": {
+    "cancel": "Cancel"
   },
   "settings": {
     "title": "Settings",

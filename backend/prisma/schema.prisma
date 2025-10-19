@@ -67,6 +67,7 @@ model User {
 
   // Authentication
   password String // Hashed password with bcrypt
+  mustChangePassword Boolean @default(false) // Force password change on first login
   djangoUserId String? @unique // Optional: reference to Django user ID for migration
 
   // Global role (primarily for SUPERADMIN)

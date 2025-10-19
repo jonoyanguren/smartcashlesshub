@@ -21,6 +21,64 @@ export interface CallApiOptions {
   body?: any;
   headers?: Record<string, string>;
   useAuth?: boolean; // If true, adds Authorization header
+  _isRetry?: boolean; // Internal flag to prevent infinite loops
+}
+
+// Flag to prevent multiple simultaneous refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<string> | null = null;
+
+/**
+ * Attempt to refresh the access token
+ */
+async function attemptTokenRefresh(): Promise<string> {
+  // If already refreshing, wait for that promise
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      // Call refresh endpoint
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+
+      const data: ApiResponse<{ accessToken: string }> = await response.json();
+      const newAccessToken = data.data.accessToken;
+
+      // Save new access token
+      localStorage.setItem('accessToken', newAccessToken);
+
+      return newAccessToken;
+    } catch (error) {
+      // Refresh failed - logout and redirect
+      clearTokens();
+      window.location.href = '/login';
+      throw error;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 /**
@@ -36,6 +94,7 @@ export async function callApi<T = any>(
     body,
     headers = {},
     useAuth = true,
+    _isRetry = false,
   } = options;
 
   // Build URL
@@ -75,6 +134,20 @@ export async function callApi<T = any>(
 
     // Handle HTTP errors
     if (!response.ok) {
+      // Handle 401 Unauthorized - try to refresh token
+      if (response.status === 401 && useAuth && !_isRetry) {
+        try {
+          // Attempt to refresh the token
+          await attemptTokenRefresh();
+
+          // Retry the original request with new token
+          return callApi<T>(endpoint, { ...options, _isRetry: true });
+        } catch (refreshError) {
+          // Refresh failed, error already handled in attemptTokenRefresh
+          throw refreshError;
+        }
+      }
+
       const error: ApiError = {
         errorCode: data.errorCode || 'UNKNOWN_ERROR',
         message: data.message || 'An error occurred',

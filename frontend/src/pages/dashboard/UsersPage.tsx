@@ -1,50 +1,91 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, Button } from '../../components/ui';
+import { Card, Button, LoadingState } from '../../components/ui';
+import UnauthorizedState from '../../components/ui/UnauthorizedState';
+import { getUsers, deleteUser, type User, type CreateUserResponse } from '../../api/users';
+import CreateUserModal from '../../components/users/CreateUserModal';
+import PasswordDisplayModal from '../../components/users/PasswordDisplayModal';
 
 const UsersPage = () => {
   const { t } = useTranslation(['dashboard']);
   const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - will be replaced with API calls
-  const users = [
-    {
-      id: '1',
-      email: 'admin@besoclub.com',
-      firstName: 'Juan',
-      lastName: 'Admin',
-      role: 'TENANT_ADMIN',
-      isActive: true,
-      createdAt: '2025-01-15',
-    },
-    {
-      id: '2',
-      email: 'staff@besoclub.com',
-      firstName: 'Maria',
-      lastName: 'Staff',
-      role: 'TENANT_STAFF',
-      isActive: true,
-      createdAt: '2025-02-01',
-    },
-    {
-      id: '3',
-      email: 'user1@example.com',
-      firstName: 'Pedro',
-      lastName: 'García',
-      role: 'END_USER',
-      isActive: true,
-      createdAt: '2025-02-10',
-    },
-    {
-      id: '4',
-      email: 'user2@example.com',
-      firstName: 'Ana',
-      lastName: 'López',
-      role: 'END_USER',
-      isActive: false,
-      createdAt: '2025-02-15',
-    },
-  ];
+  // Modal states
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newUserData, setNewUserData] = useState<{ email: string; password: string } | null>(null);
+
+  // Fetch users from API
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getUsers();
+      setUsers(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load users');
+      console.error('Error loading users:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateUser = () => {
+    setEditingUser(null);
+    setShowCreateModal(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setShowCreateModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+    setEditingUser(null);
+  };
+
+  const handleUserSuccess = (response?: CreateUserResponse) => {
+    loadUsers(); // Refresh user list
+    handleCloseModal();
+
+    // If creating a new user with temporary password, show it
+    if (response && response.temporaryPassword) {
+      setNewUserData({
+        email: response.email,
+        password: response.temporaryPassword,
+      });
+      setShowPasswordModal(true);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    const confirmed = window.confirm(
+      t('dashboard:users.confirm_delete', {
+        defaultValue: 'Are you sure you want to remove {{email}} from this tenant?',
+        email: userEmail
+      })
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteUser(userId);
+      loadUsers(); // Refresh list
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete user';
+      setError(errorMessage);
+      console.error('Error deleting user:', err);
+    }
+  };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -64,13 +105,13 @@ const UsersPage = () => {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'TENANT_ADMIN':
-        return 'Admin';
+        return t('dashboard:users.roles.tenant_admin');
       case 'TENANT_STAFF':
-        return 'Staff';
+        return t('dashboard:users.roles.tenant_staff');
       case 'END_USER':
-        return 'User';
+        return t('dashboard:users.roles.end_user');
       case 'SUPERADMIN':
-        return 'Super Admin';
+        return t('dashboard:users.roles.superadmin');
       default:
         return role;
     }
@@ -79,8 +120,50 @@ const UsersPage = () => {
   const filteredUsers =
     selectedRole === 'all' ? users : users.filter((u) => u.role === selectedRole);
 
+  // Show loading state
+  if (loading) {
+    return (
+      <LoadingState
+        message={t('dashboard:users.loading', { defaultValue: 'Loading users...' })}
+      />
+    );
+  }
+
+  // Check if error is an authorization error
+  const isUnauthorized = error && (
+    error.includes('AUTH_INSUFFICIENT_PERMISSIONS') ||
+    error.includes('INSUFFICIENT_PERMISSIONS') ||
+    error.includes('Unauthorized')
+  );
+
+  // Show unauthorized state if permission error
+  if (isUnauthorized) {
+    return (
+      <UnauthorizedState
+        message={t('dashboard:users.unauthorized_title', { defaultValue: 'Unauthorized Access' })}
+        description={t('dashboard:users.unauthorized_description', {
+          defaultValue: 'You do not have permission to manage users. Please contact your administrator if you believe this is an error.',
+        })}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">{error}</h3>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -93,7 +176,7 @@ const UsersPage = () => {
             })}
           </p>
         </div>
-        <Button variant="primary" size="lg">
+        <Button variant="primary" size="lg" onClick={handleCreateUser}>
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -113,7 +196,7 @@ const UsersPage = () => {
               </div>
             </div>
             <div className="ml-5">
-              <p className="text-sm font-medium text-gray-500">Admins</p>
+              <p className="text-sm font-medium text-gray-500">{t('dashboard:users.stats.admins')}</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {users.filter((u) => u.role === 'TENANT_ADMIN').length}
               </p>
@@ -131,7 +214,7 @@ const UsersPage = () => {
               </div>
             </div>
             <div className="ml-5">
-              <p className="text-sm font-medium text-gray-500">Staff</p>
+              <p className="text-sm font-medium text-gray-500">{t('dashboard:users.stats.staff')}</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {users.filter((u) => u.role === 'TENANT_STAFF').length}
               </p>
@@ -149,7 +232,7 @@ const UsersPage = () => {
               </div>
             </div>
             <div className="ml-5">
-              <p className="text-sm font-medium text-gray-500">Customers</p>
+              <p className="text-sm font-medium text-gray-500">{t('dashboard:users.stats.customers')}</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {users.filter((u) => u.role === 'END_USER').length}
               </p>
@@ -167,7 +250,7 @@ const UsersPage = () => {
               </div>
             </div>
             <div className="ml-5">
-              <p className="text-sm font-medium text-gray-500">Total</p>
+              <p className="text-sm font-medium text-gray-500">{t('dashboard:users.stats.total')}</p>
               <p className="text-2xl font-semibold text-gray-900">{users.length}</p>
             </div>
           </div>
@@ -185,9 +268,9 @@ const UsersPage = () => {
             <option value="all">
               {t('dashboard:users.all_roles', { defaultValue: 'All Roles' })}
             </option>
-            <option value="TENANT_ADMIN">Admin</option>
-            <option value="TENANT_STAFF">Staff</option>
-            <option value="END_USER">Customers</option>
+            <option value="TENANT_ADMIN">{t('dashboard:users.roles.tenant_admin')}</option>
+            <option value="TENANT_STAFF">{t('dashboard:users.roles.tenant_staff')}</option>
+            <option value="END_USER">{t('dashboard:users.roles.end_user')}</option>
           </select>
           <input
             type="text"
@@ -258,17 +341,23 @@ const UsersPage = () => {
                           : 'bg-red-100 text-red-800'
                       }`}
                     >
-                      {user.isActive ? 'Active' : 'Inactive'}
+                      {user.isActive ? t('dashboard:users.status.active') : t('dashboard:users.status.inactive')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-accent-600 hover:text-accent-900 mr-4">
+                    <button
+                      onClick={() => handleEditUser(user)}
+                      className="text-accent-600 hover:text-accent-900 mr-4"
+                    >
                       {t('dashboard:users.edit', { defaultValue: 'Edit' })}
                     </button>
-                    <button className="text-red-600 hover:text-red-900">
+                    <button
+                      onClick={() => handleDeleteUser(user.id, user.email)}
+                      className="text-red-600 hover:text-red-900"
+                    >
                       {t('dashboard:users.delete', { defaultValue: 'Delete' })}
                     </button>
                   </td>
@@ -306,6 +395,24 @@ const UsersPage = () => {
             </p>
           </div>
         </Card>
+      )}
+
+      {/* Create/Edit User Modal */}
+      <CreateUserModal
+        isOpen={showCreateModal}
+        onClose={handleCloseModal}
+        onSuccess={handleUserSuccess}
+        user={editingUser}
+      />
+
+      {/* Password Display Modal */}
+      {newUserData && (
+        <PasswordDisplayModal
+          isOpen={showPasswordModal}
+          onClose={() => setShowPasswordModal(false)}
+          email={newUserData.email}
+          temporaryPassword={newUserData.password}
+        />
       )}
     </div>
   );

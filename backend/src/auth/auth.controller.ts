@@ -207,6 +207,7 @@ export async function me(req: Request, res: Response) {
         phone: true,
         globalRole: true,
         isActive: true,
+        mustChangePassword: true,
         tenants: {
           include: {
             tenant: {
@@ -232,6 +233,84 @@ export async function me(req: Request, res: Response) {
     });
   } catch (error) {
     console.error('Error fetching user:', error);
+    sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
+  }
+}
+
+// Change password (mandatory or voluntary)
+export async function changePassword(req: Request, res: Response) {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return sendUnauthorized(res, ErrorCodes.AUTH_TOKEN_INVALID);
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    // Validation
+    if (!currentPassword) {
+      return sendBadRequest(res, ErrorCodes.AUTH_CURRENT_PASSWORD_REQUIRED);
+    }
+
+    if (!newPassword) {
+      return sendBadRequest(res, ErrorCodes.AUTH_NEW_PASSWORD_REQUIRED);
+    }
+
+    if (!confirmPassword) {
+      return sendBadRequest(res, ErrorCodes.AUTH_CONFIRM_PASSWORD_REQUIRED);
+    }
+
+    // Check passwords match
+    if (newPassword !== confirmPassword) {
+      return sendBadRequest(res, ErrorCodes.AUTH_PASSWORDS_DO_NOT_MATCH);
+    }
+
+    // Validate password strength (minimum 8 characters)
+    if (newPassword.length < 8) {
+      return sendBadRequest(res, ErrorCodes.AUTH_PASSWORD_TOO_WEAK);
+    }
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return sendNotFound(res, ErrorCodes.USER_NOT_FOUND);
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isPasswordValid) {
+      return sendUnauthorized(res, ErrorCodes.AUTH_INVALID_CURRENT_PASSWORD);
+    }
+
+    // Check that new password is different from current
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      return sendBadRequest(res, ErrorCodes.AUTH_NEW_PASSWORD_SAME_AS_CURRENT);
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear mustChangePassword flag
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        mustChangePassword: false,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+  } catch (error) {
+    console.error('Error changing password:', error);
     sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
   }
 }

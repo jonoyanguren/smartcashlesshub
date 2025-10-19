@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getEventById, type Event } from '../../api/events';
-import { Button } from '../../components/ui';
+import { Button, LoadingState } from '../../components/ui';
 
 const EventPreviewPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -52,10 +52,10 @@ const EventPreviewPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-50 to-white">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-accent-200 border-t-accent-600 rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('dashboard:events.preview.loading')}</p>
-        </div>
+        <LoadingState
+          size="lg"
+          message={t('dashboard:events.preview.loading')}
+        />
       </div>
     );
   }

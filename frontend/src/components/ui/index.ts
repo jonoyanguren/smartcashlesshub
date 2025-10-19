@@ -13,3 +13,5 @@ export type { ModalProps } from './Modal';
 
 export { default as Table } from './Table';
 export type { TableProps, Column } from './Table';
+
+export { default as LoadingState } from './LoadingState';

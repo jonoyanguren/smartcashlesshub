@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import authRoutes from './auth/auth.routes';
 import tenantRoutes from './tenant/tenant.routes';
 import eventRoutes from './event/event.routes';
+import userRoutes from './user/user.routes';
 import adminRoutes from './admin/admin.routes';
 
 dotenv.config();
@@ -43,6 +44,7 @@ app.get('/api/v1', (req: Request, res: Response) => {
       auth: '/api/v1/auth',
       tenants: '/api/v1/tenants',
       events: '/api/v1/events',
+      users: '/api/v1/users',
       admin: '/api/v1/admin',
     },
   });
@@ -54,6 +56,7 @@ app.use('/api/v1/auth', authRoutes);
 // Protected tenant routes
 app.use('/api/v1/tenants', tenantRoutes);
 app.use('/api/v1/events', eventRoutes);
+app.use('/api/v1/users', userRoutes);
 
 // Admin routes (SUPERADMIN only)
 app.use('/api/v1/admin', adminRoutes);
