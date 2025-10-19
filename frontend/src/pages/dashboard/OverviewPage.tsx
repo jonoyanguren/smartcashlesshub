@@ -1,10 +1,107 @@
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { Card } from '../../components/ui';
+import { useState, useEffect } from 'react';
+import { getEvents, type Event } from '../../api/events';
+import { getUsers, type User } from '../../api/users';
+
+// Helper function to format relative time
+const formatRelativeTime = (date: string, t: any): string => {
+  const now = new Date();
+  const past = new Date(date);
+  const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
+
+  if (diffInSeconds < 60) {
+    return t('dashboard:activity.just_now', { defaultValue: 'Just now' });
+  }
+
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return t('dashboard:activity.minutes_ago', { defaultValue: '{{count}} minutes ago', count: diffInMinutes });
+  }
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return t('dashboard:activity.hours_ago', { defaultValue: '{{count}} hours ago', count: diffInHours });
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 30) {
+    return t('dashboard:activity.days_ago', { defaultValue: '{{count}} days ago', count: diffInDays });
+  }
+
+  return past.toLocaleDateString();
+};
+
+interface Activity {
+  id: string;
+  type: 'event' | 'user';
+  title: string;
+  description: string;
+  time: string;
+  icon: string;
+  createdAt: string;
+}
 
 const OverviewPage = () => {
   const { user, tenant } = useAuth();
   const { t } = useTranslation(['dashboard', 'common']);
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
+
+  // Load recent activity
+  useEffect(() => {
+    const loadRecentActivity = async () => {
+      try {
+        setLoadingActivity(true);
+
+        // Load events and users in parallel
+        const [events, users] = await Promise.all([
+          getEvents().catch(() => [] as Event[]),
+          getUsers().catch(() => [] as User[]),
+        ]);
+
+        // Combine events and users into activities
+        const activities: Activity[] = [];
+
+        // Add events as activities
+        events.forEach((event) => {
+          activities.push({
+            id: `event-${event.id}`,
+            type: 'event',
+            title: t('dashboard:activity.event_created', { defaultValue: 'New event created' }),
+            description: event.name,
+            time: formatRelativeTime(event.createdAt, t),
+            icon: '📅',
+            createdAt: event.createdAt,
+          });
+        });
+
+        // Add users as activities
+        users.forEach((user) => {
+          activities.push({
+            id: `user-${user.id}`,
+            type: 'user',
+            title: t('dashboard:activity.user_created', { defaultValue: 'New user created' }),
+            description: `${user.firstName} ${user.lastName} (${user.email})`,
+            time: formatRelativeTime(user.createdAt, t),
+            icon: '👤',
+            createdAt: user.createdAt,
+          });
+        });
+
+        // Sort by creation date (newest first) and take only the 5 most recent
+        activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setRecentActivity(activities.slice(0, 5));
+      } catch (error) {
+        console.error('Error loading recent activity:', error);
+      } finally {
+        setLoadingActivity(false);
+      }
+    };
+
+    loadRecentActivity();
+  }, [t]);
 
   const stats = [
     {
@@ -50,33 +147,6 @@ const OverviewPage = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       ),
-    },
-  ];
-
-  const recentActivity = [
-    {
-      id: 1,
-      type: 'event',
-      title: 'New event created',
-      description: 'Summer Festival 2025',
-      time: '2 hours ago',
-      icon: '📅',
-    },
-    {
-      id: 2,
-      type: 'user',
-      title: 'New user registered',
-      description: 'john@example.com',
-      time: '4 hours ago',
-      icon: '👤',
-    },
-    {
-      id: 3,
-      type: 'transaction',
-      title: 'Payment received',
-      description: '€125.00',
-      time: '5 hours ago',
-      icon: '💰',
     },
   ];
 
@@ -158,23 +228,53 @@ const OverviewPage = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {t('dashboard:recent_activity', { defaultValue: 'Recent Activity' })}
           </h3>
-          <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+          {loadingActivity ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-4 border-accent-200 border-t-accent-600 rounded-full animate-spin"></div>
+            </div>
+          ) : recentActivity.length === 0 ? (
+            <div className="text-center py-12">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <span className="text-2xl">{activity.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    {activity.title}
-                  </p>
-                  <p className="text-sm text-gray-600">{activity.description}</p>
-                  <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                {t('dashboard:activity.no_activity', { defaultValue: 'No recent activity' })}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {t('dashboard:activity.no_activity_desc', {
+                  defaultValue: 'Create an event or add a user to get started.',
+                })}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentActivity.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <span className="text-2xl">{activity.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      {activity.title}
+                    </p>
+                    <p className="text-sm text-gray-600 truncate">{activity.description}</p>
+                    <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
 
         {/* Quick Actions */}
