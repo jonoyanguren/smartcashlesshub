@@ -12,6 +12,7 @@ import userRoutes from './user/user.routes';
 import adminRoutes from './admin/admin.routes';
 import paymentRoutes from './payment/payment.routes';
 import reportsRoutes from './reports/reports.routes';
+import offerRoutes from './offer/offer.routes';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.get('/api/v1', (req: Request, res: Response) => {
       tenants: '/api/v1/tenants',
       events: '/api/v1/events',
       users: '/api/v1/users',
+      offers: '/api/v1/offers',
       payments: '/api/v1/payments',
       reports: '/api/v1/reports',
       admin: '/api/v1/admin',
@@ -61,6 +63,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/tenants', tenantRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/offers', offerRoutes);
 
 // Payment routes (includes Django webhook endpoints)
 app.use('/api/v1/payments', paymentRoutes);

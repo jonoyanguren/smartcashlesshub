@@ -20,14 +20,21 @@
 
 ## 🔥 Critical Issues / Bugs
 
-- [ ]
+- [ ] We have to mantain all the /frontend/api files with a good try-catch structure adn all calling "callApi" 
 
 ---
 
 ## 📋 Backlog
 
 ### Features
-- [ ] Offers and packages. The tenant will be able to create offers when the event is programmed, the final users would be able to buy something through the app before the event. An exmaple of that would be 100e is the entrance with 2 bracelets with 50euros each. These offers can have a discount or a package so, I dont know how is better to build this in the database
+- [ ] Offers and packages: remaining work
+    - Purchase flow (create OfferPurchase, payment, status transitions)
+    - Django integration for bracelet activation (sync bracelet IDs)
+    - Enforcement: maxQuantity, maxPerUser, validity window on purchase
+    - Public offers endpoint(s) for mobile app (read-only)
+- [ ] Make all the pages have all the information.
+    - In the event page, have the event offers, and the event users
+    - In the user page, have the events assisted, offers and payments purchases
 - [ ] User invitation system: Send email with secure link when admin creates user (currently shows password in modal) - **USE BREVO**
 - [ ] Email notifications system, this would be used for campaigns. The tenant will be able to create an offer and send a campaign to the users with previous filtering. Example "A campaing that is created to buy the presales ticket with a bracalet and we charge you 10 euros more if you buy today" send a great designed email for the users selected.  - **Brevo tool**
 - [ ] Multi-language support in backend (currently only frontend has i18n)
@@ -155,6 +162,15 @@
 - [x] Logo displayed in EventPreviewPage - frontend/src/pages/dashboard/EventPreviewPage.tsx:130
 - [x] Tenant colors applied in OverviewPage (card, stats icons)
 - [x] Full i18n support for branding configuration (EN + ES) - frontend/src/locales/*/dashboard.json
+
+### Offers & Packages System
+- [x] Prisma models and enums added - backend/prisma/schema.prisma:252-409
+- [x] Backend routes registered - backend/src/index.ts:66
+- [x] Error codes for offers - backend/src/constants/errorCodes.ts:77-97
+- [x] Offer endpoints (CRUD) - backend/src/offer/
+- [x] Frontend API module - frontend/src/api/offers.ts
+- [x] Offers page with list, filters, stats, create/edit modal - frontend/src/pages/dashboard/OffersPage.tsx
+- [x] CreateOfferModal component - frontend/src/components/offers/CreateOfferModal.tsx
 
 ### Event Images System (commit: add images to events)
 - [x] Added `images` field to Event model in Prisma schema - backend/prisma/schema.prisma:23

@@ -85,8 +85,9 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  tenants  TenantUser[] // Tenants this user has access to (with specific roles)
-  payments Payment[] // Payments made by this user
+  tenants        TenantUser[]     // Tenants this user has access to (with specific roles)
+  payments       Payment[]        // Payments made by this user
+  offerPurchases OfferPurchase[]  // Offers purchased by this user
 
   @@index([email])
   @@index([djangoUserId])
@@ -171,7 +172,9 @@ model Event {
   updatedAt DateTime @updatedAt
 
   // Relations
-  payments Payment[] // Payments made for this event
+  payments       Payment[]        // Payments made for this event
+  offers         Offer[]          // Offers available for this event
+  offerPurchases OfferPurchase[]  // Offer purchases for this event
 
   @@index([tenantId])
   @@index([status])
@@ -243,4 +246,164 @@ model Payment {
   @@index([paidAt])
   @@index([djangoPaymentId])
   @@map("payments")
+}
+
+// ============================================================================
+// OFFERS & PACKAGES SYSTEM
+// ============================================================================
+
+enum OfferType {
+  BUNDLE // Package deals (entry + bracelets + items)
+  EARLY_BIRD // Time-limited discount on offer purchase
+  DISCOUNT_PERCENTAGE // Percentage discount on consumptions during event
+}
+
+enum OfferStatus {
+  DRAFT // Offer is being configured
+  ACTIVE // Offer is available for purchase
+  INACTIVE // Offer is temporarily disabled
+  EXPIRED // Offer validity period has ended
+  SOLD_OUT // All available stock has been sold
+}
+
+enum OfferItemType {
+  ENTRY // Event entry ticket
+  BRACELET // Cashless bracelet with preloaded amount
+  VOUCHER // Discount voucher for consumptions
+  MERCHANDISE // Physical merchandise (t-shirts, etc.)
+  SERVICE // Additional services (VIP access, etc.)
+}
+
+enum PurchaseStatus {
+  PENDING // Purchase initiated but payment not confirmed
+  COMPLETED // Purchase successfully processed
+  CANCELLED // Purchase was cancelled
+  REFUNDED // Purchase was refunded
+  EXPIRED // Purchase expired (not used within validity period)
+}
+
+model Offer {
+  id          String      @id @default(cuid())
+  name        String // e.g., "Early Bird VIP Package"
+  description String? // Detailed description of what's included
+
+  // Offer type and status
+  type   OfferType
+  status OfferStatus @default(DRAFT)
+
+  // Pricing
+  originalPrice      Decimal? @db.Decimal(10, 2) // Original price (for early bird/discounts)
+  price              Decimal  @db.Decimal(10, 2) // Final price
+  discountPercentage Decimal? @db.Decimal(5, 2) // For DISCOUNT_PERCENTAGE type (e.g., 10.00 = 10%)
+
+  // Stock and purchase limits
+  maxQuantity     Int? // Maximum number of offers available (null = unlimited)
+  soldQuantity    Int      @default(0) // Number already sold
+  maxPerUser      Int?     @default(1) // Maximum purchases per user (null = unlimited)
+
+  // Validity period
+  validFrom  DateTime? // When the offer becomes available (null = immediately)
+  validUntil DateTime? // When the offer expires (null = no expiration)
+
+  // Relations
+  eventId  String
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Tenant reference (for security and multi-tenancy, no direct relation)
+  tenantId String
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  items     OfferItem[]
+  purchases OfferPurchase[]
+
+  @@index([eventId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([type])
+  @@index([validFrom, validUntil])
+  @@map("offers")
+}
+
+model OfferItem {
+  id          String        @id @default(cuid())
+  name        String // e.g., "Entry Ticket", "Bracelet 50€"
+  description String? // Additional details
+  type        OfferItemType
+  quantity    Int           @default(1) // How many of this item are included
+
+  // For BRACELET type: preloaded amount
+  braceletAmount Decimal? @db.Decimal(10, 2) // e.g., 50.00 for a bracelet with €50
+
+  // For VOUCHER type: discount details
+  voucherDiscount Decimal? @db.Decimal(5, 2) // Percentage discount (e.g., 15.00 = 15%)
+
+  // Metadata for additional configuration
+  metadata Json?
+
+  // Relations
+  offerId String
+  offer   Offer  @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([offerId])
+  @@index([type])
+  @@map("offer_items")
+}
+
+model OfferPurchase {
+  id String @id @default(cuid())
+
+  // Purchase status
+  status PurchaseStatus @default(PENDING)
+
+  // Amount paid
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("EUR")
+
+  // Discount applied (if EARLY_BIRD or special promo)
+  discountAmount Decimal? @db.Decimal(10, 2)
+  finalAmount    Decimal  @db.Decimal(10, 2) // Amount after discount
+
+  // Payment details
+  paymentMethod PaymentMethod?
+  paymentId     String? // Reference to Payment model if applicable
+
+  // Django integration for bracelets
+  djangoBraceletIds String[] @default([]) // Array of bracelet IDs activated in Django
+  activatedAt       DateTime? // When bracelets were activated
+
+  // Relations
+  offerId String
+  offer   Offer  @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Tenant reference (for security and multi-tenancy, no direct relation)
+  tenantId String
+
+  // Metadata for additional data (items snapshot, etc.)
+  metadata Json?
+
+  // Timestamps
+  purchasedAt DateTime? // When payment was completed
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([offerId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([status])
+  @@index([purchasedAt])
+  @@map("offer_purchases")
 }
