@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, LoadingState, Button } from '../../components/ui';
 import { getEvents, type Event } from '../../api/events';
 import { getEventPaymentStats, type PaymentStats } from '../../api/payments';
+import { exportEventStats, type ReportFormat } from '../../api/reports';
 
 const EventDetailStatsPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -17,6 +18,8 @@ const EventDetailStatsPage = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(60); // seconds (default: 1 minute)
+  const [exporting, setExporting] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -104,6 +107,21 @@ const EventDetailStatsPage = () => {
     return t('dashboard:stats.hours_ago', { defaultValue: `${hours}h ago`, count: hours });
   };
 
+  // Handle export
+  const handleExport = async (format: ReportFormat) => {
+    if (!event) return;
+    try {
+      setExporting(true);
+      setShowExportMenu(false);
+      await exportEventStats(event.id, format);
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      alert('Failed to export report. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return <LoadingState message={t('dashboard:stats.loading', { defaultValue: 'Loading statistics...' })} />;
   }
@@ -140,6 +158,57 @@ const EventDetailStatsPage = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Export Button with Dropdown - Only for COMPLETED events */}
+          {event.status === 'COMPLETED' && (
+            <div className="relative">
+              <Button
+                variant="outline"
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                disabled={exporting}
+                className="flex items-center gap-2"
+              >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              {exporting ? t('dashboard:stats.exporting', { defaultValue: 'Exporting...' }) : t('dashboard:stats.export', { defaultValue: 'Export' })}
+            </Button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                <div className="py-1">
+                  <button
+                    onClick={() => handleExport('excel')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Excel (.xlsx)
+                  </button>
+                  <button
+                    onClick={() => handleExport('csv')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    CSV (.csv)
+                  </button>
+                  <button
+                    onClick={() => handleExport('pdf')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    PDF (.pdf)
+                  </button>
+                </div>
+              </div>
+            )}
+            </div>
+          )}
+
           <span className={`px-3 py-1 text-sm font-medium rounded-full ${
             event.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
             event.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' :

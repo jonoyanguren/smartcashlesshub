@@ -11,6 +11,7 @@ import eventRoutes from './event/event.routes';
 import userRoutes from './user/user.routes';
 import adminRoutes from './admin/admin.routes';
 import paymentRoutes from './payment/payment.routes';
+import reportsRoutes from './reports/reports.routes';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.get('/api/v1', (req: Request, res: Response) => {
       events: '/api/v1/events',
       users: '/api/v1/users',
       payments: '/api/v1/payments',
+      reports: '/api/v1/reports',
       admin: '/api/v1/admin',
     },
   });
@@ -62,6 +64,9 @@ app.use('/api/v1/users', userRoutes);
 
 // Payment routes (includes Django webhook endpoints)
 app.use('/api/v1/payments', paymentRoutes);
+
+// Reports routes (protected)
+app.use('/api/v1/reports', reportsRoutes);
 
 // Admin routes (SUPERADMIN only)
 app.use('/api/v1/admin', adminRoutes);

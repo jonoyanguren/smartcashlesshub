@@ -27,12 +27,9 @@
 ## 📋 Backlog
 
 ### Features
+- [ ] Offers and packages. The tenant will be able to create offers when the event is programmed, the final users would be able to buy something through the app before the event. An exmaple of that would be 100e is the entrance with 2 bracelets with 50euros each. These offers can have a discount or a package so, I dont know how is better to build this in the database
 - [ ] User invitation system: Send email with secure link when admin creates user (currently shows password in modal) - **USE BREVO**
-- [ ] Polling on the events page to do a "real time" statistics. The tenant users would be able to see updated data in the event statistics page. The two ideas for this would be to do a update button or do a polling every X seconds. Or maybe do both.
-- [ ] The refresh control of the event statistics page make it in a component.
-- [ ] Improve the UX/UI on the events depending on the status. If an event is live now we should show the update and polling information. If the event is draft or not started we should not show the View stats button.
 - [ ] Email notifications system, this would be used for campaigns. The tenant will be able to create an offer and send a campaign to the users with previous filtering. Example "A campaing that is created to buy the presales ticket with a bracalet and we charge you 10 euros more if you buy today" send a great designed email for the users selected.  - **Brevo tool**
-- [ ] Export reports (PDF/Excel) for payments and events
 - [ ] Multi-language support in backend (currently only frontend has i18n)
 - [ ] Webhook system for external integrations
 - [ ] Analytics dashboard with charts (recharts or chart.js)
@@ -41,7 +38,16 @@
 - [ ] Gamification
 - [ ] Mobile responsive improvements in the FRONTEND
 - [ ] Logging infrastructure (winston or pino) in the API
-- [ ] API rate limiting (express-rate-limit)
+- [ ] API rate limiting (express-rate-limit) - **Not urgent with current client base**
+  - Purpose: Limit requests per client/IP to prevent abuse and protect server resources
+  - Use cases:
+    - Report exports: 50 per day (CPU/memory intensive operations)
+    - Event creation: 20 per hour
+    - User creation: 10 per hour
+    - General API: 100 requests per minute
+  - Benefits: Prevents DDoS attacks, bot scraping, and resource exhaustion
+  - Implementation: express-rate-limit middleware with different limits per route
+  - When to implement: When client base grows or experiencing abuse/high traffic
 
 ### Mobile app
 - [ ] Start the mobile app
@@ -168,6 +174,99 @@
   - Smooth transitions and error handling
 - [x] Fixed capacity validation inconsistency (backend now requires capacity >= 1 or undefined for unlimited)
 - [x] i18n support with defaultValue fallbacks for new image-related keys
+
+### Event Statistics Auto-Refresh System (commit: auto update in event stats)
+- [x] Real-time statistics polling for ACTIVE events - frontend/src/pages/dashboard/EventDetailStatsPage.tsx
+- [x] Manual refresh button with loading animation - EventDetailStatsPage.tsx:167-187
+  - Spinning refresh icon when refreshing
+  - Disabled state during refresh to prevent multiple requests
+- [x] Auto-refresh toggle checkbox - EventDetailStatsPage.tsx:199-209
+  - Only shown for ACTIVE events (line 162)
+  - Uses React state management for toggle
+- [x] Configurable refresh interval selector - EventDetailStatsPage.tsx:211-222
+  - 1 minute (60s) - default
+  - 3 minutes (180s)
+  - 5 minutes (300s)
+- [x] Last updated timestamp with "time ago" format - EventDetailStatsPage.tsx:92-105, 190-194
+  - Shows "just now", "Xs ago", "Xm ago", "Xh ago"
+  - Updates automatically as time passes
+- [x] Auto-refresh effect with interval management - EventDetailStatsPage.tsx:27-44
+  - Uses useRef to track interval ID
+  - Proper cleanup on component unmount
+  - Clears interval when auto-refresh is disabled
+- [x] Payment stats integration - EventDetailStatsPage.tsx:64-76, 78-90
+  - Loads from Django backend via getEventPaymentStats API
+  - Updates revenue, transactions, and hourly charts in real-time
+- [x] UX improvements for ACTIVE events
+  - "LIVE NOW" badge with pulse animation - EventDetailStatsPage.tsx:152-157
+  - Refresh controls only shown for ACTIVE events
+  - Visual feedback during data refresh
+- [x] State management with multiple loading states - EventDetailStatsPage.tsx:14-17
+  - loading: Initial page load
+  - statsLoading: First stats load
+  - refreshing: Manual/auto refresh in progress
+  - Prevents UI jank during updates
+- [x] i18n support for all refresh-related UI text
+
+### Reports Export System
+- [x] Backend dependencies installed - exceljs, csv-writer, pdfkit, @types/pdfkit
+- [x] Reports module structure created - backend/src/reports/
+  - reports.service.ts: Generator functions for all formats and report types
+  - reports.controller.ts: 4 API endpoints for different report types
+  - reports.routes.ts: Protected routes with auth middleware
+- [x] Backend API endpoints - backend/src/reports/reports.controller.ts
+  - `/api/v1/reports/event-stats/:eventId` - Single event statistics
+  - `/api/v1/reports/events-summary` - All events summary
+  - `/api/v1/reports/payments` - Payment history (with filters: eventId, startDate, endDate)
+  - `/api/v1/reports/user/:userId` - User payment report
+- [x] Three export formats supported: Excel (.xlsx), CSV (.csv), PDF (.pdf)
+- [x] Excel exports with ExcelJS - backend/src/reports/reports.service.ts:280-483
+  - Multiple worksheets (summary + detailed transactions)
+  - Formatted headers with bold text and background colors
+  - Auto-fit column widths
+  - Professional styling
+- [x] CSV exports - backend/src/reports/reports.service.ts:485-552
+  - Clean comma-separated format
+  - Compatible with Excel and Google Sheets
+  - Proper data escaping
+- [x] PDF exports with PDFKit - backend/src/reports/reports.service.ts:554-688
+  - Professional document layout
+  - Sections with headers and formatting
+  - Page breaks for large datasets
+  - Footer with generation timestamp
+- [x] Frontend API functions - frontend/src/api/reports.ts
+  - exportEventStats(eventId, format)
+  - exportEventsSummary(format)
+  - exportPaymentHistory(options, format)
+  - exportUserPayments(userId, format)
+  - Automatic file download with proper naming
+- [x] EventDetailStatsPage export UI - frontend/src/pages/dashboard/EventDetailStatsPage.tsx:161-208
+  - Export button with dropdown menu in page header
+  - Three format options (Excel, CSV, PDF) with colored icons
+  - Loading state ("Exporting...") with disabled button
+  - Error handling with user alerts
+- [x] Full i18n support (EN + ES) - frontend/src/locales/*/dashboard.json
+  - dashboard:stats.export
+  - dashboard:stats.exporting
+  - All export-related UI text
+- [x] Routes registered in main app - backend/src/index.ts:14,69
+- [x] Protected routes requiring authentication and tenant context
+- [x] Comprehensive error handling (event not found, user not found, invalid format)
+- [x] Report data includes:
+  - Event statistics: Revenue, transactions, hourly breakdown, payment methods
+  - Events summary: All events with totals and status
+  - Payment history: Complete transaction list with user and event details
+  - User payments: Individual user spending with event breakdown
+- [x] Decimal type handling fixed - backend/src/reports/reports.service.ts
+  - Number() conversion for all Prisma Decimal amounts (lines 61, 69, 124, 234)
+  - Prevents "toFixed is not a function" errors in PDF/Excel/CSV generation
+- [x] Export button visibility control - frontend/src/pages/dashboard/EventDetailStatsPage.tsx:162-210
+  - Export dropdown only shown for COMPLETED events
+  - Hidden for ACTIVE, SCHEDULED, DRAFT, and CANCELLED events
+- [x] Tested and verified: All 3 formats (Excel, CSV, PDF) generate successfully
+  - File downloads work automatically with proper naming
+  - No TypeScript errors or runtime errors
+  - Professional formatting in all output formats
 
 ---
 

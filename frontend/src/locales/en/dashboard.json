@@ -82,7 +82,21 @@
     "active_hours_label": "Active Hours",
     "no_activity_data": "No activity data available",
     "no_payment_data": "No payment data available",
-    "no_hourly_data": "No hourly data available"
+    "no_hourly_data": "No hourly data available",
+    "export": "Export",
+    "exporting": "Exporting...",
+    "event_not_found": "Event not found",
+    "back_to_events": "Back to Events",
+    "event_capacity": "Capacity",
+    "event_duration": "Duration",
+    "event_start": "Start Date",
+    "event_end": "End Date",
+    "event_revenue": "Event Revenue",
+    "avg_transaction": "Avg. Transaction",
+    "revenue_over_time": "Revenue Over Time",
+    "user_activations": "Payment Activity Summary",
+    "payment_methods": "Payment Methods",
+    "hourly_activity": "Hourly Activity"
   },
   "events": {
     "title": "Events",
