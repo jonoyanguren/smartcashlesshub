@@ -5,10 +5,10 @@ import { callApi, type ApiError } from './index';
 
 export interface TenantBranding {
   logo: string | null;
+  heroImage: string | null;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
-  favicon: string | null;
 }
 
 export interface TenantConfig {

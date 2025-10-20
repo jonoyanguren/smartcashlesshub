@@ -10,10 +10,10 @@ interface TenantBrandingContextType {
 
 const defaultBranding: TenantBranding = {
   logo: null,
+  heroImage: null,
   primaryColor: '#6366f1',
   secondaryColor: '#8b5cf6',
   accentColor: '#ec4899',
-  favicon: null,
 };
 
 const TenantBrandingContext = createContext<TenantBrandingContextType | undefined>(undefined);
@@ -72,11 +72,6 @@ export function TenantBrandingProvider({ children }: TenantBrandingProviderProps
 
     root.style.setProperty('--color-accent-dark', darkenColor(brandingConfig.accentColor, 10));
     root.style.setProperty('--color-accent-light', lightenColor(brandingConfig.accentColor, 90));
-
-    // Update favicon if provided
-    if (brandingConfig.favicon) {
-      updateFavicon(brandingConfig.favicon);
-    }
   };
 
   const refreshBranding = async () => {
@@ -143,14 +138,4 @@ function lightenColor(hex: string, percent: number): string {
   const b = rgb.b + (255 - rgb.b) * factor;
 
   return rgbToHex(r, g, b);
-}
-
-function updateFavicon(url: string) {
-  let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-  if (!link) {
-    link = document.createElement('link');
-    link.rel = 'icon';
-    document.getElementsByTagName('head')[0].appendChild(link);
-  }
-  link.href = url;
 }

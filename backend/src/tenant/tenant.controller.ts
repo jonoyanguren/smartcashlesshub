@@ -273,10 +273,10 @@ export async function getTenantConfig(req: Request, res: Response) {
     const metadata = tenant.metadata as any;
     const brandingConfig = {
       logo: metadata?.branding?.logo || null,
+      heroImage: metadata?.branding?.heroImage || null,
       primaryColor: metadata?.branding?.primaryColor || '#6366f1', // Default indigo
       secondaryColor: metadata?.branding?.secondaryColor || '#8b5cf6', // Default purple
       accentColor: metadata?.branding?.accentColor || '#ec4899', // Default pink
-      favicon: metadata?.branding?.favicon || null,
     };
 
     res.json({

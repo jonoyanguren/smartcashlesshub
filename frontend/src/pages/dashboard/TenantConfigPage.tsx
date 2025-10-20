@@ -15,10 +15,10 @@ const TenantConfigPage = () => {
   const [tenantName, setTenantName] = useState('');
   const [branding, setBranding] = useState<TenantBranding>({
     logo: null,
+    heroImage: null,
     primaryColor: '#6366f1',
     secondaryColor: '#8b5cf6',
     accentColor: '#ec4899',
-    favicon: null,
   });
 
   useEffect(() => {
@@ -248,7 +248,7 @@ const TenantConfigPage = () => {
           {/* Logo */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('dashboard:config.logo_url', { defaultValue: 'Logo URL' })}
+              {t('dashboard:config.logo_url')}
             </label>
             <input
               type="text"
@@ -257,14 +257,20 @@ const TenantConfigPage = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
               placeholder="https://example.com/logo.png"
             />
-            <p className="mt-1 text-sm text-gray-500">
-              {t('dashboard:config.logo_desc', {
-                defaultValue: 'URL to your logo image. Will be displayed in the dashboard header.',
-              })}
-            </p>
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-900 font-medium mb-1">📍 {t('dashboard:config.logo_where_used')}</p>
+              <ul className="text-sm text-blue-800 space-y-1 ml-4 list-disc">
+                <li>{t('dashboard:config.logo_sidebar')}</li>
+                <li>{t('dashboard:config.logo_preview')}</li>
+                <li>{t('dashboard:config.logo_mobile')}</li>
+              </ul>
+              <p className="text-sm text-blue-900 font-medium mt-3 mb-1">📏 {t('dashboard:config.logo_size')}</p>
+              <p className="text-sm text-blue-800">{t('dashboard:config.logo_size_detail')}</p>
+              <p className="text-sm text-blue-800">{t('dashboard:config.logo_format')}</p>
+            </div>
             {branding.logo && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                <p className="text-sm text-gray-600 mb-2">{t('dashboard:config.preview')}:</p>
                 <img src={branding.logo} alt="Logo preview" className="max-h-16" onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }} />
@@ -272,23 +278,43 @@ const TenantConfigPage = () => {
             )}
           </div>
 
-          {/* Favicon */}
+          {/* Hero Image */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('dashboard:config.favicon_url', { defaultValue: 'Favicon URL' })}
+              {t('dashboard:config.hero_url')}
             </label>
             <input
               type="text"
-              value={branding.favicon || ''}
-              onChange={(e) => setBranding(prev => ({ ...prev, favicon: e.target.value || null }))}
+              value={branding.heroImage || ''}
+              onChange={(e) => setBranding(prev => ({ ...prev, heroImage: e.target.value || null }))}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
-              placeholder="https://example.com/favicon.ico"
+              placeholder="https://example.com/hero-banner.jpg"
             />
-            <p className="mt-1 text-sm text-gray-500">
-              {t('dashboard:config.favicon_desc', {
-                defaultValue: 'URL to your favicon. Will be displayed in the browser tab.',
-              })}
-            </p>
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-900 font-medium mb-1">📍 {t('dashboard:config.hero_where_used')}</p>
+              <ul className="text-sm text-blue-800 space-y-1 ml-4 list-disc">
+                <li>{t('dashboard:config.hero_preview')}</li>
+                <li>{t('dashboard:config.hero_mobile')}</li>
+                <li>{t('dashboard:config.hero_public')}</li>
+              </ul>
+              <p className="text-sm text-blue-900 font-medium mt-3 mb-1">📏 {t('dashboard:config.hero_size')}</p>
+              <p className="text-sm text-blue-800">{t('dashboard:config.hero_size_detail')}</p>
+              <p className="text-sm text-blue-800">{t('dashboard:config.hero_aspect')}</p>
+              <p className="text-sm text-blue-800">{t('dashboard:config.hero_format')}</p>
+            </div>
+            {branding.heroImage && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">{t('dashboard:config.preview')}:</p>
+                <img
+                  src={branding.heroImage}
+                  alt="Hero image preview"
+                  className="w-full max-h-48 object-cover rounded-lg"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </Card>

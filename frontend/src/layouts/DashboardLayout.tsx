@@ -3,9 +3,11 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useTenantBranding } from '../contexts/TenantBrandingContext';
 
 const DashboardLayout = () => {
   const { user, tenant, logout } = useAuth();
+  const { branding } = useTenantBranding();
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation(['dashboard', 'common']);
@@ -100,8 +102,18 @@ const DashboardLayout = () => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <Link to="/dashboard" className="flex items-center">
-              <span className="text-xl font-bold bg-gradient-to-r from-accent-600 to-accent-800 bg-clip-text text-transparent">
+            <Link to="/dashboard" className="flex items-center gap-3">
+              {branding.logo && (
+                <img
+                  src={branding.logo}
+                  alt={tenant?.name || 'Logo'}
+                  className="h-8 w-auto object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              )}
+              <span className="text-xl font-bold text-gray-900">
                 {tenant?.name || t('common:app_name')}
               </span>
             </Link>

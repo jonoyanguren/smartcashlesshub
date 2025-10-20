@@ -102,6 +102,21 @@ const EventPreviewPage = () => {
         </div>
       </div>
 
+      {/* Hero Image Banner */}
+      {branding.heroImage && (
+        <div className="w-full h-64 md:h-96 relative overflow-hidden">
+          <img
+            src={branding.heroImage}
+            alt="Event banner"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).parentElement!.style.display = 'none';
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
+        </div>
+      )}
+
       {/* Event Preview */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Status Badge */}
