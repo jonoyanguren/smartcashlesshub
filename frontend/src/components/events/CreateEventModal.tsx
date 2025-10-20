@@ -28,7 +28,10 @@ const CreateEventModal = ({ isOpen, onClose, onSuccess, event }: CreateEventModa
     endDate: '',
     status: 'DRAFT',
     capacity: undefined,
+    images: [],
   });
+
+  const [newImageUrl, setNewImageUrl] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -57,6 +60,7 @@ const CreateEventModal = ({ isOpen, onClose, onSuccess, event }: CreateEventModa
         endDate: toDateTimeLocalFormat(event.endDate),
         status: event.status,
         capacity: event.capacity,
+        images: event.images || [],
       });
     } else if (!event && isOpen) {
       // Reset form when creating new event
@@ -69,8 +73,10 @@ const CreateEventModal = ({ isOpen, onClose, onSuccess, event }: CreateEventModa
         endDate: '',
         status: 'DRAFT',
         capacity: undefined,
+        images: [],
       });
     }
+    setNewImageUrl('');
   }, [event, isOpen]);
 
   const validateForm = (): boolean => {
@@ -140,6 +146,10 @@ const CreateEventModal = ({ isOpen, onClose, onSuccess, event }: CreateEventModa
         dataToSend.capacity = formData.capacity;
       }
 
+      if (formData.images && formData.images.length > 0) {
+        dataToSend.images = formData.images;
+      }
+
       if (isEditing && event) {
         await updateEvent(event.id, dataToSend);
       } else {
@@ -156,7 +166,9 @@ const CreateEventModal = ({ isOpen, onClose, onSuccess, event }: CreateEventModa
         endDate: '',
         status: 'DRAFT',
         capacity: undefined,
+        images: [],
       });
+      setNewImageUrl('');
 
       onSuccess();
       onClose();
@@ -182,11 +194,25 @@ const CreateEventModal = ({ isOpen, onClose, onSuccess, event }: CreateEventModa
         endDate: '',
         status: 'DRAFT',
         capacity: undefined,
+        images: [],
       });
+      setNewImageUrl('');
       setErrors({});
       setError('');
       onClose();
     }
+  };
+
+  const handleAddImage = () => {
+    if (newImageUrl.trim()) {
+      setFormData({ ...formData, images: [...(formData.images || []), newImageUrl.trim()] });
+      setNewImageUrl('');
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const updatedImages = formData.images?.filter((_, i) => i !== index) || [];
+    setFormData({ ...formData, images: updatedImages });
   };
 
   return (
@@ -312,6 +338,55 @@ const CreateEventModal = ({ isOpen, onClose, onSuccess, event }: CreateEventModa
             min="1"
             fullWidth
           />
+        </div>
+
+        {/* Event Images */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('dashboard:events.form.images', { defaultValue: 'Event Images' })}
+          </label>
+          <div className="flex gap-2 mb-3">
+            <input
+              type="url"
+              value={newImageUrl}
+              onChange={(e) => setNewImageUrl(e.target.value)}
+              placeholder={t('dashboard:events.form.image_url_placeholder', { defaultValue: 'https://example.com/image.jpg' })}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddImage();
+                }
+              }}
+            />
+            <Button type="button" variant="secondary" onClick={handleAddImage}>
+              {t('dashboard:events.form.add_image', { defaultValue: 'Add' })}
+            </Button>
+          </div>
+          {formData.images && formData.images.length > 0 && (
+            <div className="space-y-2">
+              {formData.images.map((img, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <img src={img} alt={`Preview ${index + 1}`} className="h-16 w-16 object-cover rounded" onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/64?text=Error';
+                  }} />
+                  <span className="flex-1 text-sm text-gray-700 truncate">{img}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(index)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-2 text-sm text-gray-500">
+            {t('dashboard:events.form.images_help', { defaultValue: 'Add image URLs to display in the event preview' })}
+          </p>
         </div>
 
         {/* Action Buttons */}

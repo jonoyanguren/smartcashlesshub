@@ -14,6 +14,7 @@ export interface Event {
   endDate: string;
   status: "DRAFT" | "SCHEDULED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   capacity?: number;
+  images: string[];
   tenantId: string;
   config?: any;
   createdAt: string;
@@ -29,6 +30,7 @@ export interface CreateEventRequest {
   endDate: string;
   status?: "DRAFT" | "SCHEDULED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   capacity?: number;
+  images?: string[];
   config?: any;
 }
 

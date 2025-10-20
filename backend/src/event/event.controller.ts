@@ -95,6 +95,7 @@ export async function createEvent(req: Request, res: Response) {
       endDate,
       status,
       capacity,
+      images,
       config,
     } = req.body;
 
@@ -123,9 +124,14 @@ export async function createEvent(req: Request, res: Response) {
       return sendBadRequest(res, ErrorCodes.EVENT_INVALID_DATES);
     }
 
-    // Validate capacity if provided
-    if (capacity !== undefined && capacity !== null && capacity < 0) {
+    // Validate capacity if provided (must be at least 1, or leave empty for unlimited)
+    if (capacity !== undefined && capacity !== null && capacity < 1) {
       return sendBadRequest(res, ErrorCodes.EVENT_INVALID_CAPACITY);
+    }
+
+    // Validate images if provided (must be an array of strings)
+    if (images !== undefined && !Array.isArray(images)) {
+      return sendBadRequest(res, ErrorCodes.EVENT_INVALID_IMAGES);
     }
 
     // Create event (automatically associate with tenant from token)
@@ -139,6 +145,7 @@ export async function createEvent(req: Request, res: Response) {
         endDate: end,
         status: status || 'DRAFT',
         capacity,
+        images: images || [],
         tenantId, // Use tenant from JWT token
         config,
       },
@@ -173,6 +180,7 @@ export async function updateEvent(req: Request, res: Response) {
       endDate,
       status,
       capacity,
+      images,
       config,
     } = req.body;
 
@@ -198,9 +206,14 @@ export async function updateEvent(req: Request, res: Response) {
       }
     }
 
-    // Validate capacity if provided
-    if (capacity !== undefined && capacity !== null && capacity < 0) {
+    // Validate capacity if provided (must be at least 1, or leave empty for unlimited)
+    if (capacity !== undefined && capacity !== null && capacity < 1) {
       return sendBadRequest(res, ErrorCodes.EVENT_INVALID_CAPACITY);
+    }
+
+    // Validate images if provided (must be an array of strings)
+    if (images !== undefined && !Array.isArray(images)) {
+      return sendBadRequest(res, ErrorCodes.EVENT_INVALID_IMAGES);
     }
 
     // Build update data
@@ -214,6 +227,7 @@ export async function updateEvent(req: Request, res: Response) {
     if (endDate !== undefined) updateData.endDate = new Date(endDate);
     if (status !== undefined) updateData.status = status;
     if (capacity !== undefined) updateData.capacity = capacity;
+    if (images !== undefined) updateData.images = images;
     if (config !== undefined) updateData.config = config;
 
     const event = await prisma.event.update({

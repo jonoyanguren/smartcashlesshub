@@ -13,6 +13,7 @@ const EventPreviewPage = () => {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     if (eventId) {
@@ -147,6 +148,56 @@ const EventPreviewPage = () => {
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">{event.description}</p>
           )}
         </div>
+
+        {/* Event Images Carousel */}
+        {event.images && event.images.length > 0 && (
+          <div className="mb-12 relative">
+            <div className="relative h-96 w-full rounded-3xl overflow-hidden bg-gray-100">
+              <img
+                src={event.images[currentImageIndex]}
+                alt={`${event.name} - Image ${currentImageIndex + 1}`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=Image+Not+Found';
+                }}
+              />
+              {event.images.length > 1 && (
+                <>
+                  {/* Previous Button */}
+                  <button
+                    onClick={() => setCurrentImageIndex((currentImageIndex - 1 + event.images.length) % event.images.length)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all"
+                  >
+                    <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  {/* Next Button */}
+                  <button
+                    onClick={() => setCurrentImageIndex((currentImageIndex + 1) % event.images.length)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all"
+                  >
+                    <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  {/* Indicators */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {event.images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          index === currentImageIndex ? 'bg-white w-8' : 'bg-white/60'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Event Details Card */}
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-8">

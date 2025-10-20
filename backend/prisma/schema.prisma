@@ -152,6 +152,9 @@ model Event {
   // Capacity
   capacity Int? // Maximum attendees (null = unlimited)
 
+  // Images
+  images String[] @default([]) // Array of image URLs for event gallery
+
   // Tenant relation
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)

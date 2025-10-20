@@ -29,7 +29,6 @@
 ### Features
 - [ ] User invitation system: Send email with secure link when admin creates user (currently shows password in modal) - **USE BREVO**
 - [ ] Add images to the event. The tenant when creating an event will be able to select some images to upload and will be shown in the app.
-- [ ] Improve all the branding system. Add a hero image url, delete the favicon one (we dont use it). In the frontend we should explain and add more information of where the images will be used to. For example. The hero image will be set in the preview page. The sizes of perfect images... 
 - [ ] Polling on the events page to do a "real time" statistics. The tenant users would be able to see updated data in the event statistics page. The two ideas for this would be to do a update button or do a polling every X seconds. Or maybe do both.
 - [ ] Email notifications system, this would be used for campaigns. The tenant will be able to create an offer and send a campaign to the users with previous filtering. Example "A campaing that is created to buy the presales ticket with a bracalet and we charge you 10 euros more if you buy today" send a great designed email for the users selected.  - **Brevo tool**
 - [ ] Export reports (PDF/Excel) for payments and events
@@ -135,17 +134,20 @@
 - [x] Frontend API functions for tenant config - frontend/src/api/tenants.ts
 - [x] TenantConfigPage with color pickers and logo inputs - frontend/src/pages/dashboard/TenantConfigPage.tsx
 - [x] Color configuration for primary, secondary, and accent colors
-- [x] Logo and favicon URL inputs
+- [x] Logo and hero image URL inputs (removed favicon)
+- [x] Hero image displayed in EventPreviewPage - frontend/src/pages/dashboard/EventPreviewPage.tsx:106-118
+- [x] Comprehensive documentation in TenantConfigPage (where images are used, recommended sizes, formats)
 - [x] Live preview of colors
 - [x] Route added for /dashboard/config - frontend/src/App.tsx:52
 - [x] Error code added for tenant branding - backend/src/constants/errorCodes.ts:21
 - [x] TenantBrandingContext for global branding state - frontend/src/contexts/TenantBrandingContext.tsx
 - [x] CSS variables applied globally (--color-primary, --color-secondary, --color-accent, etc.)
 - [x] Auto-refresh branding when config is saved
-- [x] Branding navigation item in sidebar - frontend/src/layouts/DashboardLayout.tsx:58
+- [x] Branding navigation item in sidebar - frontend/src/layouts/DashboardLayout.tsx:60
 - [x] Logo displayed in OverviewPage - frontend/src/pages/dashboard/OverviewPage.tsx:196
-- [x] Logo displayed in EventPreviewPage - frontend/src/pages/dashboard/EventPreviewPage.tsx:115
+- [x] Logo displayed in EventPreviewPage - frontend/src/pages/dashboard/EventPreviewPage.tsx:130
 - [x] Tenant colors applied in OverviewPage (card, stats icons)
+- [x] Full i18n support for branding configuration (EN + ES) - frontend/src/locales/*/dashboard.json
 
 ---
 
