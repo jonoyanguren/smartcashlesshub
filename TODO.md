@@ -28,7 +28,6 @@
 
 ### Features
 - [ ] User invitation system: Send email with secure link when admin creates user (currently shows password in modal) - **USE BREVO**
-- [ ] Add images to the event. The tenant when creating an event will be able to select some images to upload and will be shown in the app.
 - [ ] Polling on the events page to do a "real time" statistics. The tenant users would be able to see updated data in the event statistics page. The two ideas for this would be to do a update button or do a polling every X seconds. Or maybe do both.
 - [ ] Email notifications system, this would be used for campaigns. The tenant will be able to create an offer and send a campaign to the users with previous filtering. Example "A campaing that is created to buy the presales ticket with a bracalet and we charge you 10 euros more if you buy today" send a great designed email for the users selected.  - **Brevo tool**
 - [ ] Export reports (PDF/Excel) for payments and events
@@ -148,6 +147,25 @@
 - [x] Logo displayed in EventPreviewPage - frontend/src/pages/dashboard/EventPreviewPage.tsx:130
 - [x] Tenant colors applied in OverviewPage (card, stats icons)
 - [x] Full i18n support for branding configuration (EN + ES) - frontend/src/locales/*/dashboard.json
+
+### Event Images System (commit: add images to events)
+- [x] Added `images` field to Event model in Prisma schema - backend/prisma/schema.prisma:23
+- [x] Database migration created and applied - backend/prisma/migrations/.../add_images_to_events
+- [x] Backend validation for images array in create/update endpoints - backend/src/event/event.controller.ts:128,210
+- [x] Error code added: EVENT_INVALID_IMAGES - backend/src/constants/errorCodes.ts:46
+- [x] Updated Event and CreateEventRequest types with images field - frontend/src/api/events.ts:17,33
+- [x] Image management in CreateEventModal - frontend/src/components/events/CreateEventModal.tsx:343-390
+  - Input for adding image URLs with Enter key support
+  - Visual list with thumbnail previews (64x64px)
+  - Remove button for each image
+  - Error handling for failed image loads
+- [x] Image carousel in EventPreviewPage - frontend/src/pages/dashboard/EventPreviewPage.tsx:152-200
+  - Full-width carousel (h-96) with rounded borders
+  - Previous/Next navigation buttons (only shown if multiple images)
+  - Dot indicators for current slide
+  - Smooth transitions and error handling
+- [x] Fixed capacity validation inconsistency (backend now requires capacity >= 1 or undefined for unlimited)
+- [x] i18n support with defaultValue fallbacks for new image-related keys
 
 ---
 
