@@ -12,7 +12,9 @@ import EventPreviewPage from './pages/dashboard/EventPreviewPage';
 import EventStatsPage from './pages/dashboard/EventStatsPage';
 import EventDetailStatsPage from './pages/dashboard/EventDetailStatsPage';
 import UsersPage from './pages/dashboard/UsersPage';
+import UserDetailPage from './pages/dashboard/UserDetailPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
+import TenantConfigPage from './pages/dashboard/TenantConfigPage';
 
 function App() {
   return (
@@ -45,7 +47,9 @@ function App() {
         <Route path="events/:eventId/stats" element={<EventDetailStatsPage />} />
         <Route path="stats" element={<EventStatsPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="users/:id" element={<UserDetailPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="config" element={<TenantConfigPage />} />
       </Route>
     </Routes>
   );

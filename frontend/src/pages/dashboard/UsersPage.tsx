@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, Button, LoadingState } from '../../components/ui';
 import UnauthorizedState from '../../components/ui/UnauthorizedState';
 import { getUsers, deleteUser, type User, type CreateUserResponse } from '../../api/users';
@@ -9,6 +9,7 @@ import PasswordDisplayModal from '../../components/users/PasswordDisplayModal';
 
 const UsersPage = () => {
   const { t } = useTranslation(['dashboard']);
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [users, setUsers] = useState<User[]>([]);
@@ -361,6 +362,12 @@ const UsersPage = () => {
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => navigate(`/dashboard/users/${user.id}`)}
+                      className="text-blue-600 hover:text-blue-900 mr-4"
+                    >
+                      {t('dashboard:users.view', { defaultValue: 'View' })}
+                    </button>
                     <button
                       onClick={() => handleEditUser(user)}
                       className="text-accent-600 hover:text-accent-900 mr-4"

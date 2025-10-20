@@ -135,12 +135,85 @@ export async function getUserById(req: Request, res: Response) {
       return sendNotFound(res, ErrorCodes.USER_NOT_FOUND);
     }
 
+    // Fetch payment data for this user in this tenant
+    const payments = await prisma.payment.findMany({
+      where: {
+        userId: id,
+        tenantId,
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            name: true,
+            startDate: true,
+            location: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Calculate payment summary
+    const completedPayments = payments.filter((p) => p.status === 'COMPLETED');
+    const totalSpent = completedPayments.reduce(
+      (sum, p) => sum + Number(p.amount),
+      0
+    );
+    const averageTransaction = completedPayments.length > 0
+      ? totalSpent / completedPayments.length
+      : 0;
+
+    // Get payment method distribution
+    const paymentMethodCounts = payments.reduce((acc, p) => {
+      acc[p.paymentMethod] = (acc[p.paymentMethod] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Get most recent payment
+    const lastPayment = payments.length > 0 ? payments[0] : null;
+
+    // Payment summary
+    const paymentSummary = {
+      totalSpent: totalSpent.toFixed(2),
+      totalTransactions: payments.length,
+      completedTransactions: completedPayments.length,
+      pendingTransactions: payments.filter((p) => p.status === 'PENDING').length,
+      refundedTransactions: payments.filter((p) => p.status === 'REFUNDED').length,
+      averageTransaction: averageTransaction.toFixed(2),
+      paymentMethodDistribution: paymentMethodCounts,
+      lastPaymentDate: lastPayment?.createdAt || null,
+      currency: payments[0]?.currency || 'EUR',
+    };
+
+    // Payment history with simplified event info
+    const paymentHistory = payments.map((p) => ({
+      id: p.id,
+      amount: Number(p.amount),
+      currency: p.currency,
+      paymentMethod: p.paymentMethod,
+      status: p.status,
+      event: {
+        id: p.event.id,
+        name: p.event.name,
+        startDate: p.event.startDate,
+        location: p.event.location,
+      },
+      metadata: p.metadata,
+      paidAt: p.paidAt,
+      createdAt: p.createdAt,
+    }));
+
     res.json({
       success: true,
       data: {
         ...tenantUser.user,
         role: tenantUser.role,
         tenantUserId: tenantUser.id,
+        paymentSummary,
+        paymentHistory,
       },
     });
   } catch (error) {

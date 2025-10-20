@@ -6,6 +6,7 @@ import { Card } from '../../components/ui';
 import { useState, useEffect } from 'react';
 import { getEvents, type Event } from '../../api/events';
 import { getUsers, type User } from '../../api/users';
+import { useTenantBranding } from '../../contexts/TenantBrandingContext';
 
 // Helper function to format relative time
 const formatRelativeTime = (date: string, t: TFunction): string => {
@@ -47,6 +48,7 @@ interface Activity {
 
 const OverviewPage = () => {
   const { user, tenant } = useAuth();
+  const { branding } = useTenantBranding();
   const { t } = useTranslation(['dashboard', 'common']);
   const navigate = useNavigate();
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
@@ -183,16 +185,33 @@ const OverviewPage = () => {
 
       {/* Tenant Info */}
       {tenant && (
-        <Card className="bg-gradient-to-r from-accent-500 to-accent-700 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">{tenant.name}</h2>
-              <p className="mt-1 text-accent-100">
-                {t('dashboard:tenant_role', { defaultValue: 'Role' })}: {tenant.role}
-              </p>
+        <Card
+          className="text-white"
+          style={{
+            background: `linear-gradient(to right, var(--color-primary), var(--color-primary-dark))`
+          }}
+        >
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex items-center gap-4 flex-1">
+              {branding.logo && (
+                <img
+                  src={branding.logo}
+                  alt={`${tenant.name} logo`}
+                  className="h-16 w-auto object-contain bg-white rounded-lg p-2"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              )}
+              <div>
+                <h2 className="text-2xl font-bold">{tenant.name}</h2>
+                <p className="mt-1 opacity-90">
+                  {t('dashboard:tenant_role', { defaultValue: 'Role' })}: {tenant.role}
+                </p>
+              </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-accent-100">
+              <p className="text-sm opacity-90">
                 {t('dashboard:tenant_slug', { defaultValue: 'Slug' })}
               </p>
               <p className="text-lg font-mono">{tenant.slug}</p>
@@ -207,7 +226,13 @@ const OverviewPage = () => {
           <Card key={stat.name}>
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="p-3 bg-accent-100 rounded-lg text-accent-600">
+                <div
+                  className="p-3 rounded-lg"
+                  style={{
+                    backgroundColor: 'var(--color-primary-light)',
+                    color: 'var(--color-primary)'
+                  }}
+                >
                   {stat.icon}
                 </div>
               </div>

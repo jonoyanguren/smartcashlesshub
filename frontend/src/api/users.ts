@@ -41,6 +41,41 @@ export interface GetUsersParams {
   role?: string;
 }
 
+// Payment-related types for user details
+export interface PaymentSummary {
+  totalSpent: string;
+  totalTransactions: number;
+  completedTransactions: number;
+  pendingTransactions: number;
+  refundedTransactions: number;
+  averageTransaction: string;
+  paymentMethodDistribution: Record<string, number>;
+  lastPaymentDate: string | null;
+  currency: string;
+}
+
+export interface PaymentHistoryItem {
+  id: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  status: string;
+  event: {
+    id: string;
+    name: string;
+    startDate: string;
+    location: string;
+  };
+  metadata: any;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export interface UserDetail extends User {
+  paymentSummary: PaymentSummary;
+  paymentHistory: PaymentHistoryItem[];
+}
+
 /**
  * Get all users for the authenticated tenant
  */
@@ -69,7 +104,7 @@ export async function getUsers(params?: GetUsersParams): Promise<User[]> {
 }
 
 /**
- * Get a specific user by ID
+ * Get a specific user by ID (basic info only)
  */
 export async function getUserById(id: string): Promise<User> {
   try {
@@ -83,6 +118,25 @@ export async function getUserById(id: string): Promise<User> {
     const apiError = error as ApiError;
     throw new Error(
       apiError.errorCode || apiError.message || "Failed to fetch user"
+    );
+  }
+}
+
+/**
+ * Get detailed user information including payment summary and history
+ */
+export async function getUserDetails(id: string): Promise<UserDetail> {
+  try {
+    const response = await callApi<UserDetail>(`/users/${id}`, {
+      method: "GET",
+      useAuth: true,
+    });
+
+    return response;
+  } catch (error) {
+    const apiError = error as ApiError;
+    throw new Error(
+      apiError.errorCode || apiError.message || "Failed to fetch user details"
     );
   }
 }

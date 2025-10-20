@@ -245,3 +245,108 @@ export async function deleteTenant(req: Request, res: Response) {
     sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
   }
 }
+
+// Get current tenant configuration
+export async function getTenantConfig(req: Request, res: Response) {
+  try {
+    const tenantId = req.tenantId;
+
+    if (!tenantId) {
+      return sendBadRequest(res, ErrorCodes.AUTH_TENANT_CONTEXT_REQUIRED);
+    }
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        metadata: true,
+      },
+    });
+
+    if (!tenant) {
+      return sendNotFound(res, ErrorCodes.TENANT_NOT_FOUND);
+    }
+
+    // Extract branding config from metadata
+    const metadata = tenant.metadata as any;
+    const brandingConfig = {
+      logo: metadata?.branding?.logo || null,
+      primaryColor: metadata?.branding?.primaryColor || '#6366f1', // Default indigo
+      secondaryColor: metadata?.branding?.secondaryColor || '#8b5cf6', // Default purple
+      accentColor: metadata?.branding?.accentColor || '#ec4899', // Default pink
+      favicon: metadata?.branding?.favicon || null,
+    };
+
+    res.json({
+      success: true,
+      data: {
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+        tenantSlug: tenant.slug,
+        branding: brandingConfig,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching tenant configuration:', error);
+    sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
+  }
+}
+
+// Update tenant configuration
+export async function updateTenantConfig(req: Request, res: Response) {
+  try {
+    const tenantId = req.tenantId;
+
+    if (!tenantId) {
+      return sendBadRequest(res, ErrorCodes.AUTH_TENANT_CONTEXT_REQUIRED);
+    }
+
+    const { branding } = req.body;
+
+    // Validate branding object
+    if (!branding) {
+      return sendBadRequest(res, ErrorCodes.TENANT_BRANDING_REQUIRED);
+    }
+
+    // Get current tenant
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!tenant) {
+      return sendNotFound(res, ErrorCodes.TENANT_NOT_FOUND);
+    }
+
+    // Merge new branding with existing metadata
+    const currentMetadata = (tenant.metadata as any) || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      branding: {
+        ...currentMetadata.branding,
+        ...branding,
+      },
+    };
+
+    // Update tenant
+    const updatedTenant = await prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        metadata: updatedMetadata,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        tenantId: updatedTenant.id,
+        branding: (updatedTenant.metadata as any).branding,
+      },
+      message: 'Tenant configuration updated successfully',
+    });
+  } catch (error) {
+    console.error('Error updating tenant configuration:', error);
+    sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
+  }
+}

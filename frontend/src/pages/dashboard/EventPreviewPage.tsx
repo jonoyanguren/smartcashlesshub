@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getEventById, type Event } from '../../api/events';
 import { Button, LoadingState } from '../../components/ui';
+import { useTenantBranding } from '../../contexts/TenantBrandingContext';
 
 const EventPreviewPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation(['dashboard']);
+  const { branding } = useTenantBranding();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -108,6 +110,20 @@ const EventPreviewPage = () => {
             {event.status}
           </span>
         </div>
+
+        {/* Tenant Logo */}
+        {branding.logo && (
+          <div className="flex justify-center mb-8">
+            <img
+              src={branding.logo}
+              alt="Logo"
+              className="h-20 w-auto object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </div>
+        )}
 
         {/* Event Header */}
         <div className="text-center mb-12">
