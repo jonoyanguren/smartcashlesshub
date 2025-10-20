@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card, LoadingState, Button } from '../../components/ui';
@@ -13,10 +13,35 @@ const EventDetailStatsPage = () => {
   const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(60); // seconds (default: 1 minute)
+  const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     loadEvent();
   }, [eventId]);
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (autoRefresh && event) {
+      intervalRef.current = setInterval(() => {
+        handleRefresh();
+      }, refreshInterval * 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [autoRefresh, refreshInterval, event]);
 
   const loadEvent = async () => {
     try {
@@ -41,12 +66,42 @@ const EventDetailStatsPage = () => {
       setStatsLoading(true);
       const stats = await getEventPaymentStats(eventId);
       setPaymentStats(stats);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Error loading payment stats:', error);
       // Don't show error to user - just keep showing no data
     } finally {
       setStatsLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    if (!event) return;
+    try {
+      setRefreshing(true);
+      const stats = await getEventPaymentStats(event.id);
+      setPaymentStats(stats);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error refreshing payment stats:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Helper to format "time ago"
+  const getTimeAgo = (date: Date | null): string => {
+    if (!date) return '';
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+
+    if (seconds < 10) return t('dashboard:stats.just_now', { defaultValue: 'just now' });
+    if (seconds < 60) return t('dashboard:stats.seconds_ago', { defaultValue: `${seconds}s ago`, count: seconds });
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return t('dashboard:stats.minutes_ago', { defaultValue: `${minutes}m ago`, count: minutes });
+
+    const hours = Math.floor(minutes / 60);
+    return t('dashboard:stats.hours_ago', { defaultValue: `${hours}h ago`, count: hours });
   };
 
   if (loading) {
@@ -102,6 +157,73 @@ const EventDetailStatsPage = () => {
           )}
         </div>
       </div>
+
+      {/* Refresh Controls - Only show for ACTIVE events */}
+      {event.status === 'ACTIVE' && (
+        <Card>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Manual Refresh Button */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2"
+            >
+              <svg
+                className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              {t('dashboard:stats.refresh', { defaultValue: 'Refresh' })}
+            </Button>
+
+            {/* Last Updated Indicator */}
+            {lastUpdated && (
+              <span className="text-sm text-gray-500">
+                {t('dashboard:stats.updated', { defaultValue: 'Updated' })} {getTimeAgo(lastUpdated)}
+              </span>
+            )}
+          </div>
+
+          {/* Auto-Refresh Controls */}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="w-4 h-4 text-accent-600 border-gray-300 rounded focus:ring-accent-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                {t('dashboard:stats.auto_refresh', { defaultValue: 'Auto-refresh' })}
+              </span>
+            </label>
+
+            {/* Interval Selector */}
+            {autoRefresh && (
+              <select
+                value={refreshInterval}
+                onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
+              >
+                <option value={60}>1m</option>
+                <option value={180}>3m</option>
+                <option value={300}>5m</option>
+              </select>
+            )}
+          </div>
+        </div>
+      </Card>
+      )}
 
       {/* Event Basic Info Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -195,14 +317,14 @@ const EventDetailStatsPage = () => {
                   {t('dashboard:stats.event_revenue', { defaultValue: 'Event Revenue' })}
                 </p>
                 {statsLoading ? (
-                  <p className="text-3xl font-bold text-gray-400 mt-2">...</p>
+                  <p className="text-3xl font-bold text-gray-400 mt-2">{t('dashboard:stats.loading_data', { defaultValue: '...' })}</p>
                 ) : (
                   <>
                     <p className="text-3xl font-bold text-gray-900 mt-2">
                       €{paymentStats?.totalRevenue.toFixed(2) || '0.00'}
                     </p>
                     <p className="text-xs text-green-600 mt-1">
-                      {paymentStats?.totalTransactions || 0} completed payments
+                      {paymentStats?.totalTransactions || 0} {t('dashboard:stats.completed_payments', { defaultValue: 'completed payments' })}
                     </p>
                   </>
                 )}
@@ -222,14 +344,14 @@ const EventDetailStatsPage = () => {
                   {t('dashboard:stats.total_transactions', { defaultValue: 'Transactions' })}
                 </p>
                 {statsLoading ? (
-                  <p className="text-3xl font-bold text-gray-400 mt-2">...</p>
+                  <p className="text-3xl font-bold text-gray-400 mt-2">{t('dashboard:stats.loading_data', { defaultValue: '...' })}</p>
                 ) : (
                   <>
                     <p className="text-3xl font-bold text-gray-900 mt-2">
                       {paymentStats?.totalTransactions || 0}
                     </p>
                     <p className="text-xs text-blue-600 mt-1">
-                      Completed payments
+                      {t('dashboard:stats.completed_payments_label', { defaultValue: 'Completed payments' })}
                     </p>
                   </>
                 )}
@@ -249,14 +371,14 @@ const EventDetailStatsPage = () => {
                   {t('dashboard:stats.avg_transaction', { defaultValue: 'Avg. Transaction' })}
                 </p>
                 {statsLoading ? (
-                  <p className="text-3xl font-bold text-gray-400 mt-2">...</p>
+                  <p className="text-3xl font-bold text-gray-400 mt-2">{t('dashboard:stats.loading_data', { defaultValue: '...' })}</p>
                 ) : (
                   <>
                     <p className="text-3xl font-bold text-gray-900 mt-2">
                       €{paymentStats?.avgTransaction.toFixed(2) || '0.00'}
                     </p>
                     <p className="text-xs text-purple-600 mt-1">
-                      Per transaction
+                      {t('dashboard:stats.per_transaction', { defaultValue: 'Per transaction' })}
                     </p>
                   </>
                 )}
@@ -278,7 +400,7 @@ const EventDetailStatsPage = () => {
         </h3>
         {statsLoading ? (
           <div className="h-64 flex items-center justify-center">
-            <p className="text-gray-400">Loading...</p>
+            <p className="text-gray-400">{t('dashboard:stats.loading_data', { defaultValue: 'Loading...' })}</p>
           </div>
         ) : paymentStats && Object.keys(paymentStats.revenueByHour).length > 0 ? (
           <div className="h-64">
@@ -310,7 +432,7 @@ const EventDetailStatsPage = () => {
           </div>
         ) : (
           <div className="h-64 flex items-center justify-center">
-            <p className="text-gray-400 text-sm">No revenue data available</p>
+            <p className="text-gray-400 text-sm">{t('dashboard:stats.no_revenue_data', { defaultValue: 'No revenue data available' })}</p>
           </div>
         )}
       </Card>
@@ -322,7 +444,7 @@ const EventDetailStatsPage = () => {
         </h3>
         {statsLoading ? (
           <div className="h-64 flex items-center justify-center">
-            <p className="text-gray-400">Loading...</p>
+            <p className="text-gray-400">{t('dashboard:stats.loading_data', { defaultValue: 'Loading...' })}</p>
           </div>
         ) : paymentStats ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -335,7 +457,7 @@ const EventDetailStatsPage = () => {
                 </div>
               </div>
               <p className="text-3xl font-bold text-blue-900">{paymentStats.totalTransactions}</p>
-              <p className="text-sm text-blue-700 mt-1">Total Payments</p>
+              <p className="text-sm text-blue-700 mt-1">{t('dashboard:stats.total_payments_label', { defaultValue: 'Total Payments' })}</p>
             </div>
 
             <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
@@ -349,7 +471,7 @@ const EventDetailStatsPage = () => {
               <p className="text-3xl font-bold text-green-900">
                 €{paymentStats.totalRevenue.toFixed(0)}
               </p>
-              <p className="text-sm text-green-700 mt-1">Total Revenue</p>
+              <p className="text-sm text-green-700 mt-1">{t('dashboard:stats.total_revenue_label', { defaultValue: 'Total Revenue' })}</p>
             </div>
 
             <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
@@ -363,7 +485,7 @@ const EventDetailStatsPage = () => {
               <p className="text-3xl font-bold text-purple-900">
                 €{paymentStats.avgTransaction.toFixed(2)}
               </p>
-              <p className="text-sm text-purple-700 mt-1">Avg. Transaction</p>
+              <p className="text-sm text-purple-700 mt-1">{t('dashboard:stats.avg_transaction_label', { defaultValue: 'Avg. Transaction' })}</p>
             </div>
 
             <div className="text-center p-6 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg">
@@ -377,12 +499,12 @@ const EventDetailStatsPage = () => {
               <p className="text-3xl font-bold text-amber-900">
                 {Object.keys(paymentStats.revenueByHour).length}
               </p>
-              <p className="text-sm text-amber-700 mt-1">Active Hours</p>
+              <p className="text-sm text-amber-700 mt-1">{t('dashboard:stats.active_hours_label', { defaultValue: 'Active Hours' })}</p>
             </div>
           </div>
         ) : (
           <div className="h-64 flex items-center justify-center">
-            <p className="text-gray-400 text-sm">No activity data available</p>
+            <p className="text-gray-400 text-sm">{t('dashboard:stats.no_activity_data', { defaultValue: 'No activity data available' })}</p>
           </div>
         )}
       </Card>
@@ -395,7 +517,7 @@ const EventDetailStatsPage = () => {
           </h3>
           {statsLoading ? (
             <div className="h-48 flex items-center justify-center">
-              <p className="text-gray-400">Loading...</p>
+              <p className="text-gray-400">{t('dashboard:stats.loading_data', { defaultValue: 'Loading...' })}</p>
             </div>
           ) : paymentStats && Object.keys(paymentStats.paymentMethodStats).length > 0 ? (
             <div className="space-y-3">
@@ -430,7 +552,7 @@ const EventDetailStatsPage = () => {
             </div>
           ) : (
             <div className="h-48 flex items-center justify-center">
-              <p className="text-gray-400 text-sm">No payment data available</p>
+              <p className="text-gray-400 text-sm">{t('dashboard:stats.no_payment_data', { defaultValue: 'No payment data available' })}</p>
             </div>
           )}
         </Card>
@@ -441,7 +563,7 @@ const EventDetailStatsPage = () => {
           </h3>
           {statsLoading ? (
             <div className="h-48 flex items-center justify-center">
-              <p className="text-gray-400">Loading...</p>
+              <p className="text-gray-400">{t('dashboard:stats.loading_data', { defaultValue: 'Loading...' })}</p>
             </div>
           ) : paymentStats && Object.keys(paymentStats.revenueByHour).length > 0 ? (
             <div className="h-48 flex items-end justify-between gap-1">
@@ -464,7 +586,7 @@ const EventDetailStatsPage = () => {
             </div>
           ) : (
             <div className="h-48 flex items-center justify-center">
-              <p className="text-gray-400 text-sm">No hourly data available</p>
+              <p className="text-gray-400 text-sm">{t('dashboard:stats.no_hourly_data', { defaultValue: 'No hourly data available' })}</p>
             </div>
           )}
         </Card>

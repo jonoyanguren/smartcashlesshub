@@ -29,6 +29,8 @@
 ### Features
 - [ ] User invitation system: Send email with secure link when admin creates user (currently shows password in modal) - **USE BREVO**
 - [ ] Polling on the events page to do a "real time" statistics. The tenant users would be able to see updated data in the event statistics page. The two ideas for this would be to do a update button or do a polling every X seconds. Or maybe do both.
+- [ ] The refresh control of the event statistics page make it in a component.
+- [ ] Improve the UX/UI on the events depending on the status. If an event is live now we should show the update and polling information. If the event is draft or not started we should not show the View stats button.
 - [ ] Email notifications system, this would be used for campaigns. The tenant will be able to create an offer and send a campaign to the users with previous filtering. Example "A campaing that is created to buy the presales ticket with a bracalet and we charge you 10 euros more if you buy today" send a great designed email for the users selected.  - **Brevo tool**
 - [ ] Export reports (PDF/Excel) for payments and events
 - [ ] Multi-language support in backend (currently only frontend has i18n)
