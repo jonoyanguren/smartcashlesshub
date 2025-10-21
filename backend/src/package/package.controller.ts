@@ -1,5 +1,5 @@
-// Offer Controller
-// Handles CRUD operations for Offers
+// Package Controller
+// Handles CRUD operations for Packages
 
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
@@ -9,7 +9,10 @@ import {
   sendBadRequest,
   sendInternalError,
 } from '../utils/errorResponse';
-import { OfferType, OfferStatus, OfferItemType, Prisma } from '@prisma/client';
+import { PackageStatus, PackageItemType, Prisma } from '@prisma/client';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('PackageController');
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -18,35 +21,33 @@ import { OfferType, OfferStatus, OfferItemType, Prisma } from '@prisma/client';
 /**
  * Convert Decimal fields to numbers for JSON serialization
  */
-function convertOfferDecimalsToNumbers(offer: any) {
+function convertPackageDecimalsToNumbers(pkg: any) {
   return {
-    ...offer,
-    price: offer.price ? Number(offer.price) : 0,
-    originalPrice: offer.originalPrice ? Number(offer.originalPrice) : null,
-    discountPercentage: offer.discountPercentage ? Number(offer.discountPercentage) : null,
-    items: offer.items?.map((item: any) => ({
+    ...pkg,
+    price: pkg.price ? Number(pkg.price) : 0,
+    originalPrice: pkg.originalPrice ? Number(pkg.originalPrice) : null,
+    items: pkg.items?.map((item: any) => ({
       ...item,
       braceletAmount: item.braceletAmount ? Number(item.braceletAmount) : null,
-      voucherDiscount: item.voucherDiscount ? Number(item.voucherDiscount) : null,
     })),
   };
 }
 
 // ============================================================================
-// LIST OFFERS (for a specific event or tenant)
+// LIST PACKAGES (for a specific event or tenant)
 // ============================================================================
 
-export async function listOffers(req: Request, res: Response) {
+export async function listPackages(req: Request, res: Response) {
   try {
     const tenantId = req.tenantId;
-    const { eventId, status, type } = req.query;
+    const { eventId, status } = req.query;
 
     if (!tenantId) {
       return sendBadRequest(res, ErrorCodes.AUTH_TENANT_CONTEXT_REQUIRED);
     }
 
     // Build where clause
-    const where: Prisma.OfferWhereInput = {
+    const where: Prisma.PackageWhereInput = {
       tenantId,
     };
 
@@ -55,14 +56,10 @@ export async function listOffers(req: Request, res: Response) {
     }
 
     if (status) {
-      where.status = status as OfferStatus;
+      where.status = status as PackageStatus;
     }
 
-    if (type) {
-      where.type = type as OfferType;
-    }
-
-    const offers = await prisma.offer.findMany({
+    const packages = await prisma.package.findMany({
       where,
       include: {
         event: {
@@ -87,23 +84,23 @@ export async function listOffers(req: Request, res: Response) {
     });
 
     // Convert Decimal fields to numbers
-    const offersWithNumbers = offers.map(convertOfferDecimalsToNumbers);
+    const packagesWithNumbers = packages.map(convertPackageDecimalsToNumbers);
 
     res.json({
       success: true,
-      data: offersWithNumbers,
+      data: packagesWithNumbers,
     });
   } catch (error: any) {
-    console.error('Error listing offers:', error);
+    logger.error({ err: error, tenantId: req.tenantId }, 'Error listing packages');
     sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
   }
 }
 
 // ============================================================================
-// GET OFFER BY ID
+// GET PACKAGE BY ID
 // ============================================================================
 
-export async function getOffer(req: Request, res: Response) {
+export async function getPackage(req: Request, res: Response) {
   try {
     const tenantId = req.tenantId;
     const { id } = req.params;
@@ -112,7 +109,7 @@ export async function getOffer(req: Request, res: Response) {
       return sendBadRequest(res, ErrorCodes.AUTH_TENANT_CONTEXT_REQUIRED);
     }
 
-    const offer = await prisma.offer.findFirst({
+    const pkg = await prisma.package.findFirst({
       where: {
         id,
         tenantId,
@@ -143,42 +140,40 @@ export async function getOffer(req: Request, res: Response) {
       },
     });
 
-    if (!offer) {
-      return sendNotFound(res, ErrorCodes.OFFER_NOT_FOUND);
+    if (!pkg) {
+      return sendNotFound(res, ErrorCodes.PACKAGE_NOT_FOUND);
     }
 
     // Convert Decimal fields to numbers
-    const offerWithNumbers = convertOfferDecimalsToNumbers(offer);
+    const packageWithNumbers = convertPackageDecimalsToNumbers(pkg);
 
     res.json({
       success: true,
-      data: offerWithNumbers,
+      data: packageWithNumbers,
     });
   } catch (error: any) {
-    console.error('Error getting offer:', error);
+    logger.error({ err: error, packageId: req.params.id }, 'Error getting package');
     sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
   }
 }
 
 // ============================================================================
-// CREATE OFFER
+// CREATE PACKAGE
 // ============================================================================
 
-export async function createOffer(req: Request, res: Response) {
+export async function createPackage(req: Request, res: Response) {
   try {
     const tenantId = req.tenantId;
     const {
       eventId,
       name,
       description,
-      type,
       price,
       originalPrice,
-      discountPercentage,
       maxQuantity,
       maxPerUser,
-      validFrom,
-      validUntil,
+      saleStartDate,
+      saleEndDate,
       items,
     } = req.body;
 
@@ -192,32 +187,24 @@ export async function createOffer(req: Request, res: Response) {
     }
 
     if (!name || name.trim() === '') {
-      return sendBadRequest(res, ErrorCodes.OFFER_NAME_REQUIRED);
-    }
-
-    if (!type || !['BUNDLE', 'EARLY_BIRD', 'DISCOUNT_PERCENTAGE'].includes(type)) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_TYPE);
+      return sendBadRequest(res, ErrorCodes.PACKAGE_NAME_REQUIRED);
     }
 
     if (price === undefined || price === null || price < 0) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_PRICE);
-    }
-
-    if (discountPercentage !== undefined && (discountPercentage < 0 || discountPercentage > 100)) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_DISCOUNT);
+      return sendBadRequest(res, ErrorCodes.PACKAGE_INVALID_PRICE);
     }
 
     if (maxQuantity !== undefined && maxQuantity < 0) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_QUANTITY);
+      return sendBadRequest(res, ErrorCodes.PACKAGE_INVALID_QUANTITY);
     }
 
     if (maxPerUser !== undefined && maxPerUser < 0) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_QUANTITY);
+      return sendBadRequest(res, ErrorCodes.PACKAGE_INVALID_QUANTITY);
     }
 
     // Validate dates
-    if (validFrom && validUntil && new Date(validFrom) > new Date(validUntil)) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_DATES);
+    if (saleStartDate && saleEndDate && new Date(saleStartDate) > new Date(saleEndDate)) {
+      return sendBadRequest(res, ErrorCodes.PACKAGE_INVALID_DATES);
     }
 
     // Verify event exists and belongs to tenant
@@ -236,34 +223,32 @@ export async function createOffer(req: Request, res: Response) {
     if (items && Array.isArray(items)) {
       for (const item of items) {
         if (!item.name || item.name.trim() === '') {
-          return sendBadRequest(res, ErrorCodes.OFFER_ITEM_REQUIRED);
+          return sendBadRequest(res, ErrorCodes.PACKAGE_ITEM_REQUIRED);
         }
 
-        if (!item.type || !['ENTRY', 'BRACELET', 'VOUCHER', 'MERCHANDISE', 'SERVICE'].includes(item.type)) {
-          return sendBadRequest(res, ErrorCodes.OFFER_ITEM_INVALID_TYPE);
+        if (!item.type || !['ENTRY', 'BRACELET', 'MERCHANDISE', 'SERVICE'].includes(item.type)) {
+          return sendBadRequest(res, ErrorCodes.PACKAGE_ITEM_INVALID_TYPE);
         }
 
         if (item.quantity !== undefined && item.quantity < 1) {
-          return sendBadRequest(res, ErrorCodes.OFFER_ITEM_INVALID_QUANTITY);
+          return sendBadRequest(res, ErrorCodes.PACKAGE_ITEM_INVALID_QUANTITY);
         }
       }
     }
 
-    // Create offer with items
-    const offer = await prisma.offer.create({
+    // Create package with items
+    const pkg = await prisma.package.create({
       data: {
         eventId,
         tenantId,
         name: name.trim(),
         description: description?.trim() || null,
-        type,
         price,
         originalPrice: originalPrice || null,
-        discountPercentage: discountPercentage || null,
         maxQuantity: maxQuantity || null,
         maxPerUser: maxPerUser !== undefined ? maxPerUser : 1,
-        validFrom: validFrom ? new Date(validFrom) : null,
-        validUntil: validUntil ? new Date(validUntil) : null,
+        saleStartDate: saleStartDate ? new Date(saleStartDate) : null,
+        saleEndDate: saleEndDate ? new Date(saleEndDate) : null,
         items: items
           ? {
               create: items.map((item: any) => ({
@@ -272,7 +257,6 @@ export async function createOffer(req: Request, res: Response) {
                 type: item.type,
                 quantity: item.quantity || 1,
                 braceletAmount: item.braceletAmount || null,
-                voucherDiscount: item.voucherDiscount || null,
                 metadata: item.metadata || null,
               })),
             }
@@ -293,23 +277,23 @@ export async function createOffer(req: Request, res: Response) {
     });
 
     // Convert Decimal fields to numbers
-    const offerWithNumbers = convertOfferDecimalsToNumbers(offer);
+    const packageWithNumbers = convertPackageDecimalsToNumbers(pkg);
 
     res.status(201).json({
       success: true,
-      data: offerWithNumbers,
+      data: packageWithNumbers,
     });
   } catch (error: any) {
-    console.error('Error creating offer:', error);
+    logger.error({ err: error, data: req.body }, 'Error creating package');
     sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
   }
 }
 
 // ============================================================================
-// UPDATE OFFER
+// UPDATE PACKAGE
 // ============================================================================
 
-export async function updateOffer(req: Request, res: Response) {
+export async function updatePackage(req: Request, res: Response) {
   try {
     const tenantId = req.tenantId;
     const { id } = req.params;
@@ -319,11 +303,10 @@ export async function updateOffer(req: Request, res: Response) {
       status,
       price,
       originalPrice,
-      discountPercentage,
       maxQuantity,
       maxPerUser,
-      validFrom,
-      validUntil,
+      saleStartDate,
+      saleEndDate,
       items,
     } = req.body;
 
@@ -331,46 +314,42 @@ export async function updateOffer(req: Request, res: Response) {
       return sendBadRequest(res, ErrorCodes.AUTH_TENANT_CONTEXT_REQUIRED);
     }
 
-    // Check if offer exists
-    const existingOffer = await prisma.offer.findFirst({
+    // Check if package exists
+    const existingPackage = await prisma.package.findFirst({
       where: {
         id,
         tenantId,
       },
     });
 
-    if (!existingOffer) {
-      return sendNotFound(res, ErrorCodes.OFFER_NOT_FOUND);
+    if (!existingPackage) {
+      return sendNotFound(res, ErrorCodes.PACKAGE_NOT_FOUND);
     }
 
     // Validation
     if (name !== undefined && name.trim() === '') {
-      return sendBadRequest(res, ErrorCodes.OFFER_NAME_REQUIRED);
+      return sendBadRequest(res, ErrorCodes.PACKAGE_NAME_REQUIRED);
     }
 
     if (status !== undefined && !['DRAFT', 'ACTIVE', 'INACTIVE', 'EXPIRED', 'SOLD_OUT'].includes(status)) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_TYPE);
+      return sendBadRequest(res, ErrorCodes.PACKAGE_INVALID_QUANTITY);
     }
 
     if (price !== undefined && price < 0) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_PRICE);
-    }
-
-    if (discountPercentage !== undefined && (discountPercentage < 0 || discountPercentage > 100)) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_DISCOUNT);
+      return sendBadRequest(res, ErrorCodes.PACKAGE_INVALID_PRICE);
     }
 
     if (maxQuantity !== undefined && maxQuantity < 0) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_QUANTITY);
+      return sendBadRequest(res, ErrorCodes.PACKAGE_INVALID_QUANTITY);
     }
 
     if (maxPerUser !== undefined && maxPerUser < 0) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_QUANTITY);
+      return sendBadRequest(res, ErrorCodes.PACKAGE_INVALID_QUANTITY);
     }
 
     // Validate dates
-    if (validFrom && validUntil && new Date(validFrom) > new Date(validUntil)) {
-      return sendBadRequest(res, ErrorCodes.OFFER_INVALID_DATES);
+    if (saleStartDate && saleEndDate && new Date(saleStartDate) > new Date(saleEndDate)) {
+      return sendBadRequest(res, ErrorCodes.PACKAGE_INVALID_DATES);
     }
 
     // Build update data
@@ -381,32 +360,31 @@ export async function updateOffer(req: Request, res: Response) {
     if (status !== undefined) updateData.status = status;
     if (price !== undefined) updateData.price = price;
     if (originalPrice !== undefined) updateData.originalPrice = originalPrice;
-    if (discountPercentage !== undefined) updateData.discountPercentage = discountPercentage;
     if (maxQuantity !== undefined) updateData.maxQuantity = maxQuantity;
     if (maxPerUser !== undefined) updateData.maxPerUser = maxPerUser;
-    if (validFrom !== undefined) updateData.validFrom = validFrom ? new Date(validFrom) : null;
-    if (validUntil !== undefined) updateData.validUntil = validUntil ? new Date(validUntil) : null;
+    if (saleStartDate !== undefined) updateData.saleStartDate = saleStartDate ? new Date(saleStartDate) : null;
+    if (saleEndDate !== undefined) updateData.saleEndDate = saleEndDate ? new Date(saleEndDate) : null;
 
     // Handle items update if provided
     if (items && Array.isArray(items)) {
       // Validate items
       for (const item of items) {
         if (!item.name || item.name.trim() === '') {
-          return sendBadRequest(res, ErrorCodes.OFFER_ITEM_REQUIRED);
+          return sendBadRequest(res, ErrorCodes.PACKAGE_ITEM_REQUIRED);
         }
 
-        if (!item.type || !['ENTRY', 'BRACELET', 'VOUCHER', 'MERCHANDISE', 'SERVICE'].includes(item.type)) {
-          return sendBadRequest(res, ErrorCodes.OFFER_ITEM_INVALID_TYPE);
+        if (!item.type || !['ENTRY', 'BRACELET', 'MERCHANDISE', 'SERVICE'].includes(item.type)) {
+          return sendBadRequest(res, ErrorCodes.PACKAGE_ITEM_INVALID_TYPE);
         }
 
         if (item.quantity !== undefined && item.quantity < 1) {
-          return sendBadRequest(res, ErrorCodes.OFFER_ITEM_INVALID_QUANTITY);
+          return sendBadRequest(res, ErrorCodes.PACKAGE_ITEM_INVALID_QUANTITY);
         }
       }
 
       // Delete existing items and create new ones
-      await prisma.offerItem.deleteMany({
-        where: { offerId: id },
+      await prisma.packageItem.deleteMany({
+        where: { packageId: id },
       });
 
       updateData.items = {
@@ -416,14 +394,13 @@ export async function updateOffer(req: Request, res: Response) {
           type: item.type,
           quantity: item.quantity || 1,
           braceletAmount: item.braceletAmount || null,
-          voucherDiscount: item.voucherDiscount || null,
           metadata: item.metadata || null,
         })),
       };
     }
 
-    // Update offer
-    const offer = await prisma.offer.update({
+    // Update package
+    const pkg = await prisma.package.update({
       where: { id },
       data: updateData,
       include: {
@@ -441,23 +418,23 @@ export async function updateOffer(req: Request, res: Response) {
     });
 
     // Convert Decimal fields to numbers
-    const offerWithNumbers = convertOfferDecimalsToNumbers(offer);
+    const packageWithNumbers = convertPackageDecimalsToNumbers(pkg);
 
     res.json({
       success: true,
-      data: offerWithNumbers,
+      data: packageWithNumbers,
     });
   } catch (error: any) {
-    console.error('Error updating offer:', error);
+    logger.error({ err: error, packageId: req.params.id }, 'Error updating package');
     sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
   }
 }
 
 // ============================================================================
-// DELETE OFFER
+// DELETE PACKAGE
 // ============================================================================
 
-export async function deleteOffer(req: Request, res: Response) {
+export async function deletePackage(req: Request, res: Response) {
   try {
     const tenantId = req.tenantId;
     const { id } = req.params;
@@ -466,8 +443,8 @@ export async function deleteOffer(req: Request, res: Response) {
       return sendBadRequest(res, ErrorCodes.AUTH_TENANT_CONTEXT_REQUIRED);
     }
 
-    // Check if offer exists
-    const existingOffer = await prisma.offer.findFirst({
+    // Check if package exists
+    const existingPackage = await prisma.package.findFirst({
       where: {
         id,
         tenantId,
@@ -481,28 +458,28 @@ export async function deleteOffer(req: Request, res: Response) {
       },
     });
 
-    if (!existingOffer) {
-      return sendNotFound(res, ErrorCodes.OFFER_NOT_FOUND);
+    if (!existingPackage) {
+      return sendNotFound(res, ErrorCodes.PACKAGE_NOT_FOUND);
     }
 
     // Don't allow deletion if there are purchases
-    if (existingOffer._count.purchases > 0) {
-      return sendBadRequest(res, ErrorCodes.OFFER_ALREADY_PURCHASED, {
-        message: 'Cannot delete offer with existing purchases',
+    if (existingPackage._count.purchases > 0) {
+      return sendBadRequest(res, ErrorCodes.PACKAGE_ALREADY_PURCHASED, {
+        message: 'Cannot delete package with existing purchases',
       });
     }
 
-    // Delete offer (items will be cascade deleted)
-    await prisma.offer.delete({
+    // Delete package (items will be cascade deleted)
+    await prisma.package.delete({
       where: { id },
     });
 
     res.json({
       success: true,
-      data: { message: 'Offer deleted successfully' },
+      data: { message: 'Package deleted successfully' },
     });
   } catch (error: any) {
-    console.error('Error deleting offer:', error);
+    logger.error({ err: error, packageId: req.params.id }, 'Error deleting package');
     sendInternalError(res, ErrorCodes.INTERNAL_SERVER_ERROR, error);
   }
 }

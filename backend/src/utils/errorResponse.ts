@@ -3,6 +3,7 @@
 
 import { Response } from 'express';
 import { ErrorCode } from '../constants/errorCodes';
+import { logger } from './logger';
 
 interface ErrorResponseOptions {
   errorCode: ErrorCode;
@@ -22,6 +23,21 @@ export function sendError(
   // In development, include details for easier debugging
   if (process.env.NODE_ENV === 'development' && options.details) {
     response.details = options.details;
+  }
+
+  // Log errors (4xx warnings, 5xx errors)
+  if (statusCode >= 500) {
+    logger.error({
+      statusCode,
+      errorCode: options.errorCode,
+      details: options.details,
+    }, 'Server error occurred');
+  } else if (statusCode >= 400) {
+    logger.warn({
+      statusCode,
+      errorCode: options.errorCode,
+      details: options.details,
+    }, 'Client error occurred');
   }
 
   res.status(statusCode).json(response);

@@ -76,6 +76,10 @@ const EventsPage = () => {
     navigate(`/dashboard/events/${eventId}/stats`);
   };
 
+  const handleManageEvent = (eventId: string) => {
+    navigate(`/dashboard/events/${eventId}/manage`);
+  };
+
   const handleCloseModal = () => {
     setShowCreateModal(false);
     setEditingEvent(null);
@@ -269,19 +273,23 @@ const EventsPage = () => {
                 </div>
 
                 <div className="pt-4 border-t border-gray-200 space-y-2">
+                  <Button variant="primary" size="sm" fullWidth onClick={() => handleManageEvent(event.id)}>
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {t('dashboard:events.manage', { defaultValue: 'Manage Event' })}
+                  </Button>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" fullWidth onClick={() => handleEditEvent(event)}>
-                      {t('dashboard:events.edit', { defaultValue: 'Edit' })}
+                    <Button variant="outline" size="sm" fullWidth onClick={() => handleViewEvent(event.id)}>
+                      {t('dashboard:events.preview', { defaultValue: 'Preview' })}
                     </Button>
-                    <Button variant="primary" size="sm" fullWidth onClick={() => handleViewEvent(event.id)}>
-                      {t('dashboard:events.view', { defaultValue: 'View' })}
+                    <Button variant="ghost" size="sm" fullWidth onClick={() => handleViewStats(event.id)}>
+                      {t('dashboard:events.view_stats', { defaultValue: 'Stats' })}
                     </Button>
                   </div>
-                  <Button variant="ghost" size="sm" fullWidth onClick={() => handleViewStats(event.id)}>
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    {t('dashboard:events.view_stats', { defaultValue: 'View Stats' })}
+                  <Button variant="ghost" size="sm" fullWidth onClick={() => handleEditEvent(event)}>
+                    {t('dashboard:events.edit', { defaultValue: 'Edit' })}
                   </Button>
                 </div>
               </div>
@@ -346,18 +354,32 @@ const EventsPage = () => {
                       }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleEditEvent(event)}
-                        className="text-accent-600 hover:text-accent-900 mr-4"
-                      >
-                        {t('dashboard:events.edit', { defaultValue: 'Edit' })}
-                      </button>
-                      <button
-                        onClick={() => handleViewEvent(event.id)}
-                        className="text-accent-600 hover:text-accent-900"
-                      >
-                        {t('dashboard:events.view', { defaultValue: 'View' })}
-                      </button>
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => handleManageEvent(event.id)}
+                          className="text-accent-600 hover:text-accent-900 font-semibold"
+                        >
+                          {t('dashboard:events.manage', { defaultValue: 'Manage' })}
+                        </button>
+                        <button
+                          onClick={() => handleViewEvent(event.id)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          {t('dashboard:events.preview', { defaultValue: 'Preview' })}
+                        </button>
+                        <button
+                          onClick={() => handleViewStats(event.id)}
+                          className="text-purple-600 hover:text-purple-900"
+                        >
+                          {t('dashboard:events.view_stats', { defaultValue: 'Stats' })}
+                        </button>
+                        <button
+                          onClick={() => handleEditEvent(event)}
+                          className="text-gray-600 hover:text-gray-900"
+                        >
+                          {t('dashboard:events.edit', { defaultValue: 'Edit' })}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

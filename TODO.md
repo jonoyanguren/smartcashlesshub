@@ -1,6 +1,6 @@
 # Smart Cashless - Project TODO
 
-> Last updated: 2025-10-20
+> Last updated: 2025-10-21
 
 ## How to use this file:
 
@@ -20,31 +20,82 @@
 
 ## 🔥 Critical Issues / Bugs
 
-- [ ] We have to mantain all the /frontend/api files with a good try-catch structure adn all calling "callApi" 
+- [ ] None currently 
 
 ---
 
 ## 📋 Backlog
 
 ### Features
-- [ ] Offers and packages: remaining work
-    - Purchase flow (create OfferPurchase, payment, status transitions)
+- [ ] Push Notifications System
+    - **Phase 1: Base Notification Service** (backend/src/notifications/notifications.service.ts)
+      - Install Firebase Admin SDK
+      - Create notification service with core functions:
+        - sendPushToUser(userId, notification)
+        - sendPushToAll(eventId, notification)
+        - sendPushToSegment(eventId, filters, notification)
+      - Add fcmToken field to User model in Prisma schema
+      - Create ScheduledNotification model in Prisma (title, message, scheduledFor, status, etc.)
+      - Integration with Firebase Cloud Messaging (FCM)
+      - Store notification history in database
+    - **Phase 2: Immediate Notifications API** (backend/src/notifications/notifications.controller.ts)
+      - POST /api/v1/notifications/send - Send immediate notification
+      - Endpoint to send to all users of an event
+      - Endpoint to send to specific users
+      - Endpoint to send to filtered segment (active users, etc.)
+      - Error handling and retry logic
+    - **Phase 3: Scheduling System with Redis + Bull** (backend/src/notifications/notification.queue.ts)
+      - Install Bull and Redis (ioredis)
+      - Set up Redis server (add to docker-compose.yml)
+      - Create notification queue with Bull
+      - Create worker process (notification.worker.ts) to process scheduled jobs
+      - POST /api/v1/notifications/schedule - Schedule notification for future
+      - GET /api/v1/notifications/scheduled - List scheduled notifications
+      - DELETE /api/v1/notifications/schedule/:id - Cancel scheduled notification
+      - Support for delay calculation (schedule for specific datetime)
+      - Retry logic with exponential backoff
+      - Job persistence (survives server restarts)
+    - **Phase 4: Automatic Threshold Notifications**
+      - Integration in reward.service.ts - Send push when user earns reward
+      - Integration in payment flow - Check thresholds after each payment
+      - Configurable threshold rules in Reward model
+      - Prevent duplicate notifications for same reward
+    - **Phase 5: Dashboard UI** (frontend/src/components/eventManage/NotificationsSection.tsx)
+      - Add Notifications tab to EventManagePage
+      - Form to send immediate notifications (title, message, recipients)
+      - Form to schedule notifications (title, message, datetime, recipients)
+      - List of scheduled notifications with cancel option
+      - Preview notification before sending
+      - Recipient selector: All users, Active users, Custom segment
+      - Notification templates for common messages (promotions, updates, etc.)
+    - **Phase 6: Mobile App Integration**
+      - Register FCM token when user logs in
+      - Handle push notifications in foreground/background
+      - Deep linking from notifications to specific screens
+      - Notification permissions handling
+    - **Phase 7: Monitoring & Analytics** (Optional)
+      - Install Bull Board for job queue visualization
+      - Dashboard showing sent/pending/failed notifications
+      - Analytics: open rate, click rate, conversion rate
+      - Notification history per user
+- [ ] Packages and Rewards: remaining work
+    - Purchase flow (create PackagePurchase, payment, status transitions)
     - Django integration for bracelet activation (sync bracelet IDs)
     - Enforcement: maxQuantity, maxPerUser, validity window on purchase
-    - Public offers endpoint(s) for mobile app (read-only)
+    - Public packages/rewards endpoints for mobile app (read-only)
+    - Reward redemption flow (automatic trigger when user reaches limits)
 - [ ] Make all the pages have all the information.
     - In the event page, have the event offers, and the event users
     - In the user page, have the events assisted, offers and payments purchases
 - [ ] User invitation system: Send email with secure link when admin creates user (currently shows password in modal) - **USE BREVO**
 - [ ] Email notifications system, this would be used for campaigns. The tenant will be able to create an offer and send a campaign to the users with previous filtering. Example "A campaing that is created to buy the presales ticket with a bracalet and we charge you 10 euros more if you buy today" send a great designed email for the users selected.  - **Brevo tool**
 - [ ] Multi-language support in backend (currently only frontend has i18n)
-- [ ] Webhook system for external integrations
 - [ ] Analytics dashboard with charts (recharts or chart.js)
 - [ ] QR code generation for events. The QR code will be for the payments as same as if the user has the bracelet. This would be need to be integrated with django so the QR has the bracelet id.
 - [ ] Loyalty/rewards program
 - [ ] Gamification
 - [ ] Mobile responsive improvements in the FRONTEND
-- [ ] Logging infrastructure (winston or pino) in the API
+- [x] Logging infrastructure (Pino) in the API - See backend/LOGGING.md for documentation
 - [ ] API rate limiting (express-rate-limit) - **Not urgent with current client base**
   - Purpose: Limit requests per client/IP to prevent abuse and protect server resources
   - Use cases:
@@ -163,14 +214,79 @@
 - [x] Tenant colors applied in OverviewPage (card, stats icons)
 - [x] Full i18n support for branding configuration (EN + ES) - frontend/src/locales/*/dashboard.json
 
-### Offers & Packages System
-- [x] Prisma models and enums added - backend/prisma/schema.prisma:252-409
-- [x] Backend routes registered - backend/src/index.ts:66
-- [x] Error codes for offers - backend/src/constants/errorCodes.ts:77-97
-- [x] Offer endpoints (CRUD) - backend/src/offer/
-- [x] Frontend API module - frontend/src/api/offers.ts
-- [x] Offers page with list, filters, stats, create/edit modal - frontend/src/pages/dashboard/OffersPage.tsx
-- [x] CreateOfferModal component - frontend/src/components/offers/CreateOfferModal.tsx
+### Package & Reward System (Refactored from Offers)
+**Context**: Simplified the Offers system by splitting into two distinct entities:
+- **Package**: Pre-event purchasable products (users pay) - Example: "100€ with 2 bracelets of 50€ + 5€ each"
+- **Reward**: Event-based automatic promotions (free to users) - Example: "Spend 150€ → Get 10€ recharge"
+
+#### Backend Implementation
+- [x] Complete database schema refactoring - backend/prisma/schema.prisma:254-509
+  - Package model with originalPrice for discount display (~~10€~~ **8€**)
+  - PackageItem, PackagePurchase models for package contents
+  - Reward model with trigger types (MINIMUM_SPEND, TRANSACTION_COUNT)
+  - RewardRedemption model for tracking user redemptions
+  - Removed old Offer, OfferItem, OfferPurchase models
+- [x] Database migration and cleanup
+  - Manually dropped old offer tables (offers, offer_items, offer_purchases)
+  - Applied new schema with `npx prisma db push --accept-data-loss`
+  - Regenerated Prisma client
+- [x] Package backend module - backend/src/package/
+  - package.controller.ts: CRUD operations with Decimal conversion helpers
+  - package.routes.ts: RESTful routes (GET, POST, PUT, DELETE /api/v1/packages)
+- [x] Reward backend module - backend/src/reward/
+  - reward.controller.ts: CRUD with trigger-specific validation
+  - reward.routes.ts: RESTful routes (GET, POST, PUT, DELETE /api/v1/rewards)
+- [x] Error codes updated - backend/src/constants/errorCodes.ts:77-111
+  - PACKAGE_NOT_FOUND, PACKAGE_EXPIRED, PACKAGE_SOLD_OUT, PACKAGE_MAX_PER_USER_EXCEEDED
+  - REWARD_NOT_FOUND, REWARD_DEPLETED, REWARD_MAX_REDEMPTIONS_EXCEEDED, REWARD_USER_NOT_QUALIFIED
+- [x] Routes registered in main app - backend/src/index.ts
+- [x] Removed old offer directory - backend/src/offer/
+
+#### Frontend Implementation
+- [x] Centralized event management UX - frontend/src/pages/dashboard/EventManagePage.tsx
+  - "Manage Event" button on event cards - EventsPage.tsx
+  - Tabbed interface: Pre-event (Packages) and Event (Rewards)
+  - Route: /dashboard/events/:id/manage - App.tsx:49
+- [x] Package management section - frontend/src/components/eventManage/PackagesSection.tsx
+  - Card-based list view with discount pricing display (crossed-out originalPrice)
+  - Create/edit/delete operations
+  - Status badges (DRAFT, ACTIVE, INACTIVE)
+- [x] Reward management section - frontend/src/components/eventManage/RewardsSection.tsx
+  - Dynamic trigger labels (minimum spend vs transaction count)
+  - Reward type display (recharge amount vs discount percentage)
+  - Redemption tracking (current/max redemptions)
+- [x] CreatePackageModal - frontend/src/components/eventManage/CreatePackageModal.tsx
+  - Form with price + originalPrice for discounts
+  - Max quantity and per-user limits
+  - Status management (edit mode only)
+  - Items management (name, type, quantity, value)
+- [x] CreateRewardModal - frontend/src/components/eventManage/CreateRewardModal.tsx
+  - Dynamic fields based on trigger type (spend vs transaction)
+  - Dynamic fields based on reward type (recharge vs percentage)
+  - Redemption limits configuration
+- [x] Frontend API modules with try/catch error handling
+  - frontend/src/api/packages.ts: All CRUD functions with proper error handling
+  - frontend/src/api/rewards.ts: All CRUD functions with proper error handling
+  - All API calls wrap callApi() in try/catch blocks per requirement
+- [x] Removed old Offers code
+  - Deleted frontend/src/pages/dashboard/OffersPage.tsx
+  - Deleted frontend/src/components/offers/ directory
+  - Deleted frontend/src/api/offers.ts
+  - Removed Offers navigation from DashboardLayout.tsx
+- [x] Full i18n support (EN + ES) - frontend/src/locales/en/dashboard.json
+  - manage.* keys for tab labels and titles
+  - packages.* keys for all package-related UI
+  - rewards.* keys for all reward-related UI
+  - All with defaultValue fallbacks
+
+#### Documentation
+- [x] Comprehensive system documentation - backend/PACKAGES_AND_REWARDS.md
+  - Architecture explanation
+  - Database schema details
+  - API endpoints reference
+  - Key differences between Package and Reward
+  - Django integration points
+  - Migration notes from old Offers system
 
 ### Event Images System (commit: add images to events)
 - [x] Added `images` field to Event model in Prisma schema - backend/prisma/schema.prisma:23

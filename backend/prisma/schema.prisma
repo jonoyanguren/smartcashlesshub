@@ -85,9 +85,10 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  tenants        TenantUser[]     // Tenants this user has access to (with specific roles)
-  payments       Payment[]        // Payments made by this user
-  offerPurchases OfferPurchase[]  // Offers purchased by this user
+  tenants           TenantUser[]         // Tenants this user has access to (with specific roles)
+  payments          Payment[]            // Payments made by this user
+  packagePurchases  PackagePurchase[]    // Packages purchased by this user
+  rewardRedemptions RewardRedemption[]   // Rewards redeemed by this user
 
   @@index([email])
   @@index([djangoUserId])
@@ -172,9 +173,11 @@ model Event {
   updatedAt DateTime @updatedAt
 
   // Relations
-  payments       Payment[]        // Payments made for this event
-  offers         Offer[]          // Offers available for this event
-  offerPurchases OfferPurchase[]  // Offer purchases for this event
+  payments          Payment[]            // Payments made for this event
+  packages          Package[]            // Packages available for this event
+  packagePurchases  PackagePurchase[]    // Package purchases for this event
+  rewards           Reward[]             // Rewards available for this event
+  rewardRedemptions RewardRedemption[]   // Reward redemptions for this event
 
   @@index([tenantId])
   @@index([status])
@@ -249,27 +252,20 @@ model Payment {
 }
 
 // ============================================================================
-// OFFERS & PACKAGES SYSTEM
+// PACKAGES SYSTEM (Pre-event purchasable products)
 // ============================================================================
 
-enum OfferType {
-  BUNDLE // Package deals (entry + bracelets + items)
-  EARLY_BIRD // Time-limited discount on offer purchase
-  DISCOUNT_PERCENTAGE // Percentage discount on consumptions during event
-}
-
-enum OfferStatus {
-  DRAFT // Offer is being configured
-  ACTIVE // Offer is available for purchase
-  INACTIVE // Offer is temporarily disabled
-  EXPIRED // Offer validity period has ended
+enum PackageStatus {
+  DRAFT // Package is being configured
+  ACTIVE // Package is available for purchase
+  INACTIVE // Package is temporarily disabled
+  EXPIRED // Sales period has ended
   SOLD_OUT // All available stock has been sold
 }
 
-enum OfferItemType {
+enum PackageItemType {
   ENTRY // Event entry ticket
   BRACELET // Cashless bracelet with preloaded amount
-  VOUCHER // Discount voucher for consumptions
   MERCHANDISE // Physical merchandise (t-shirts, etc.)
   SERVICE // Additional services (VIP access, etc.)
 }
@@ -282,28 +278,25 @@ enum PurchaseStatus {
   EXPIRED // Purchase expired (not used within validity period)
 }
 
-model Offer {
-  id          String      @id @default(cuid())
+model Package {
+  id          String        @id @default(cuid())
   name        String // e.g., "Early Bird VIP Package"
   description String? // Detailed description of what's included
 
-  // Offer type and status
-  type   OfferType
-  status OfferStatus @default(DRAFT)
+  status PackageStatus @default(DRAFT)
 
-  // Pricing
-  originalPrice      Decimal? @db.Decimal(10, 2) // Original price (for early bird/discounts)
-  price              Decimal  @db.Decimal(10, 2) // Final price
-  discountPercentage Decimal? @db.Decimal(5, 2) // For DISCOUNT_PERCENTAGE type (e.g., 10.00 = 10%)
+  // Pricing (with discount support)
+  originalPrice Decimal? @db.Decimal(10, 2) // e.g., 10€ (shown crossed out)
+  price         Decimal  @db.Decimal(10, 2) // e.g., 8€ (actual sale price)
 
-  // Stock and purchase limits
-  maxQuantity     Int? // Maximum number of offers available (null = unlimited)
-  soldQuantity    Int      @default(0) // Number already sold
-  maxPerUser      Int?     @default(1) // Maximum purchases per user (null = unlimited)
+  // Stock management
+  maxQuantity  Int? // Total available (null = unlimited)
+  soldQuantity Int  @default(0) // Number already sold
+  maxPerUser   Int? @default(1) // Maximum purchases per user
 
-  // Validity period
-  validFrom  DateTime? // When the offer becomes available (null = immediately)
-  validUntil DateTime? // When the offer expires (null = no expiration)
+  // Sales period
+  saleStartDate DateTime? // When sales open (null = immediately)
+  saleEndDate   DateTime? // When sales close (null = no end)
 
   // Relations
   eventId  String
@@ -317,76 +310,70 @@ model Offer {
   updatedAt DateTime @updatedAt
 
   // Relations
-  items     OfferItem[]
-  purchases OfferPurchase[]
+  items     PackageItem[]
+  purchases PackagePurchase[]
 
   @@index([eventId])
   @@index([tenantId])
   @@index([status])
-  @@index([type])
-  @@index([validFrom, validUntil])
-  @@map("offers")
+  @@index([saleStartDate, saleEndDate])
+  @@map("packages")
 }
 
-model OfferItem {
-  id          String        @id @default(cuid())
+model PackageItem {
+  id          String          @id @default(cuid())
   name        String // e.g., "Entry Ticket", "Bracelet 50€"
   description String? // Additional details
-  type        OfferItemType
-  quantity    Int           @default(1) // How many of this item are included
+  type        PackageItemType
+  quantity    Int             @default(1) // How many of this item are included
 
   // For BRACELET type: preloaded amount
   braceletAmount Decimal? @db.Decimal(10, 2) // e.g., 50.00 for a bracelet with €50
-
-  // For VOUCHER type: discount details
-  voucherDiscount Decimal? @db.Decimal(5, 2) // Percentage discount (e.g., 15.00 = 15%)
 
   // Metadata for additional configuration
   metadata Json?
 
   // Relations
-  offerId String
-  offer   Offer  @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([offerId])
+  @@index([packageId])
   @@index([type])
-  @@map("offer_items")
+  @@map("package_items")
 }
 
-model OfferPurchase {
+model PackagePurchase {
   id String @id @default(cuid())
 
   // Purchase status
   status PurchaseStatus @default(PENDING)
 
   // Amount paid
-  amount   Decimal @db.Decimal(10, 2)
-  currency String  @default("EUR")
-
-  // Discount applied (if EARLY_BIRD or special promo)
-  discountAmount Decimal? @db.Decimal(10, 2)
-  finalAmount    Decimal  @db.Decimal(10, 2) // Amount after discount
+  amount         Decimal @db.Decimal(10, 2)
+  finalAmount    Decimal @db.Decimal(10, 2) // Amount after any discount
+  discountAmount Decimal? @db.Decimal(10, 2) // Discount applied
+  currency       String  @default("EUR")
 
   // Payment details
   paymentMethod PaymentMethod?
-  paymentId     String? // Reference to Payment model if applicable
+  paymentId     String? // Reference to external payment if applicable
 
   // Django integration for bracelets
   djangoBraceletIds String[] @default([]) // Array of bracelet IDs activated in Django
   activatedAt       DateTime? // When bracelets were activated
 
   // Relations
-  offerId String
-  offer   Offer  @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id])
 
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
 
   eventId String
-  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event   Event  @relation(fields: [eventId], references: [id])
 
   // Tenant reference (for security and multi-tenancy, no direct relation)
   tenantId String
@@ -399,11 +386,124 @@ model OfferPurchase {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  @@index([offerId])
+  @@index([packageId])
   @@index([userId])
   @@index([tenantId])
   @@index([eventId])
   @@index([status])
   @@index([purchasedAt])
-  @@map("offer_purchases")
+  @@map("package_purchases")
+}
+
+// ============================================================================
+// REWARDS SYSTEM (Event-based automatic promotions)
+// ============================================================================
+
+enum RewardStatus {
+  DRAFT // Reward is being configured
+  ACTIVE // Reward is currently checking for qualifications
+  INACTIVE // Reward is temporarily disabled
+  EXPIRED // Time period has ended
+  DEPLETED // All redemptions used up
+}
+
+enum RewardTriggerType {
+  MINIMUM_SPEND // User spends X amount
+  TRANSACTION_COUNT // User makes X transactions
+  SPECIFIC_ITEMS // User purchases specific items (future)
+}
+
+enum RewardType {
+  RECHARGE // Add money to bracelet
+  DISCOUNT_PERCENTAGE // Percentage off next purchase (future)
+  FREE_ITEM // Specific free product (future)
+}
+
+model Reward {
+  id          String       @id @default(cuid())
+  name        String // e.g., "Spend 150€ Get 10€ Free"
+  description String? // Detailed description
+
+  status RewardStatus @default(DRAFT)
+
+  // Trigger conditions
+  triggerType         RewardTriggerType // What triggers this reward
+  minimumSpend        Decimal?          @db.Decimal(10, 2) // e.g., 150€
+  minimumTransactions Int? // Alternative trigger: number of transactions
+
+  // Reward (what user gets)
+  rewardType   RewardType // Type of reward
+  rewardAmount Decimal?   @db.Decimal(10, 2) // e.g., 10€ recharge
+
+  // Redemption limits
+  maxRedemptionsPerUser Int? @default(1) // How many times can one user claim?
+  maxTotalRedemptions   Int? // Global limit across all users
+  currentRedemptions    Int  @default(0) // Counter
+
+  // Active period (during event)
+  activeFrom  DateTime? // When reward becomes available (null = immediately)
+  activeUntil DateTime? // When reward expires (null = no expiration)
+
+  // Relations
+  eventId  String
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Tenant reference (for security and multi-tenancy, no direct relation)
+  tenantId String
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  redemptions RewardRedemption[]
+
+  @@index([eventId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([activeFrom, activeUntil])
+  @@map("rewards")
+}
+
+model RewardRedemption {
+  id String @id @default(cuid())
+
+  // What triggered it
+  triggerAmount       Decimal? @db.Decimal(10, 2) // User's spend at trigger time
+  triggerTransactions Int? // Transaction count at trigger
+
+  // What they received
+  rewardAmount Decimal @db.Decimal(10, 2) // Actual amount given
+
+  // Django integration (if reward adds to bracelet)
+  djangoBraceletId String? // Bracelet that received the reward
+  appliedAt        DateTime? // When reward was actually applied to bracelet
+
+  // Relations
+  rewardId String
+  reward   Reward @relation(fields: [rewardId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  // Tenant reference (for security and multi-tenancy, no direct relation)
+  tenantId String
+
+  // Metadata for additional data
+  metadata Json?
+
+  // Timestamps
+  qualifiedAt DateTime @default(now()) // When user met the criteria
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([rewardId])
+  @@index([userId])
+  @@index([eventId])
+  @@index([tenantId])
+  @@index([qualifiedAt])
+  @@map("reward_redemptions")
 }

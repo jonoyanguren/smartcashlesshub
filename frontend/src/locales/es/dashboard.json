@@ -112,7 +112,9 @@
     "unlimited": "Ilimitado",
     "edit": "Editar",
     "view": "Ver",
+    "preview": "Vista Previa",
     "view_stats": "Ver Estadísticas",
+    "manage": "Gestionar Evento",
     "live_now": "EN DIRECTO",
     "no_events": "No hay eventos",
     "no_events_desc": "Comienza creando un nuevo evento.",
@@ -130,7 +132,7 @@
       "attendees": "Asistentes",
       "actions": "Acciones"
     },
-    "preview": {
+    "preview_page": {
       "back_to_events": "Volver a Eventos",
       "loading": "Cargando evento...",
       "not_found": "Evento no encontrado",
