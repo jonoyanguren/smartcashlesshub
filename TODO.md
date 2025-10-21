@@ -1,6 +1,6 @@
 # Smart Cashless - Project TODO
 
-> Last updated: 2025-10-21
+> Last updated: 2025-10-21 (Logging infrastructure completed)
 
 ## How to use this file:
 
@@ -95,7 +95,6 @@
 - [ ] Loyalty/rewards program
 - [ ] Gamification
 - [ ] Mobile responsive improvements in the FRONTEND
-- [x] Logging infrastructure (Pino) in the API - See backend/LOGGING.md for documentation
 - [ ] API rate limiting (express-rate-limit) - **Not urgent with current client base**
   - Purpose: Limit requests per client/IP to prevent abuse and protect server resources
   - Use cases:
@@ -400,6 +399,55 @@
   - No TypeScript errors or runtime errors
   - Professional formatting in all output formats
 
+### Logging Infrastructure with Pino
+- [x] Backend dependencies installed - pino, pino-http, pino-pretty
+- [x] Core logger configuration - backend/src/utils/logger.ts
+  - Fast, low-overhead JSON-based logging
+  - Configurable log levels (debug, info, warn, error, fatal) via LOG_LEVEL env var
+  - Pretty-printed colorized output in development mode
+  - JSON structured logs in production
+  - Child logger factory with context support (createLogger function)
+  - Standard error serializers for req/res/err objects
+- [x] HTTP request logging middleware - backend/src/middleware/httpLogger.middleware.ts
+  - Automatic logging of all HTTP requests/responses
+  - Smart log levels: INFO for 2xx, WARN for 4xx, ERROR for 5xx, silent for 3xx
+  - Response time measurement (duration field)
+  - Request/response details (method, URL, status, headers, remote IP)
+  - Sensitive header redaction (Authorization, Cookie → [REDACTED])
+  - Custom properties (userId, tenantId) added to logs when available
+- [x] Error response integration - backend/src/utils/errorResponse.ts
+  - Automatic logging in sendError utility function
+  - 4xx client errors logged as WARN level
+  - 5xx server errors logged as ERROR level
+  - Error details included in logs for debugging
+- [x] Application lifecycle logging - backend/src/index.ts
+  - Server startup logs with port, environment, and API URL
+  - Graceful shutdown handlers for SIGTERM and SIGINT signals
+  - Uncaught exception handler (FATAL level, exits process)
+  - Unhandled promise rejection handler (FATAL level, exits process)
+  - Replaced Morgan with pino-http middleware
+- [x] Example controller implementation - backend/src/package/package.controller.ts
+  - Created PackageController child logger
+  - Replaced all console.error calls with logger.error
+  - Context-aware logging (tenantId, packageId, error objects)
+- [x] Comprehensive documentation - backend/LOGGING.md
+  - Overview and features
+  - Configuration (environment variables, log levels)
+  - Usage examples (basic logging, controllers, HTTP, errors)
+  - Output formats (development pretty vs production JSON)
+  - Best practices (DO's and DON'Ts)
+  - Sensitive data handling guidelines
+  - Production monitoring integration (Datadog, Elasticsearch, CloudWatch, etc.)
+  - Performance characteristics (~10x faster than Winston)
+  - Troubleshooting guide
+- [x] Production-ready features
+  - Asynchronous logging (doesn't block event loop)
+  - Small footprint (~30KB)
+  - Automatic timestamp with ISO format
+  - Environment and app name in all logs
+  - Stack trace serialization for errors
+  - Ideal for high-traffic production servers
+
 ---
 
 ## 💡 Ideas / Future Considerations
@@ -427,7 +475,7 @@
 ## 📝 Notes
 
 ### Tech Stack
-- **Backend**: Node.js 20+, Express, TypeScript, Prisma, PostgreSQL, bcryptjs, JWT, Zod
+- **Backend**: Node.js 20+, Express, TypeScript, Prisma, PostgreSQL, bcryptjs, JWT, Zod, Pino (logging)
 - **Frontend**: React 19, Vite, TypeScript, Tailwind CSS, react-router-dom, i18next
 - **Mobile**: Expo, React Native (basic structure in /app)
 - **Database**: PostgreSQL with Prisma ORM
